@@ -1,0 +1,15 @@
+[package]
+name = "wave2text"
+version = "0.1.0"
+edition = "2021"
+description = "A simple Rust program for generating pulse waveforms as text files."
+keywords = ["waveform", "pulse", "frequency"]
+documentation = "https://dieeisdiele.github.io/wave2text/wave2text/index.html"
+authors = ["Tom Su"]
+license = "AGPL-3.0-or-later"
+
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+serde_json = "*"
