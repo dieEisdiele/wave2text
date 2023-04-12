@@ -1,4 +1,4 @@
-[![License](https://img.shields.io/badge/license-AGPLv3-blue.svg)](https://github.com/dieEisdiele/dicediele/blob/main/LICENSE.txt)
+[![License](https://img.shields.io/badge/license-AGPLv3-blue.svg)](https://github.com/dieEisdiele/wave2text/blob/main/LICENSE.txt)
 [![Latest](https://img.shields.io/badge/docs-latest-brightgreen.svg)](https://dieeisdiele.github.io/wave2text/wave2text/index.html)
 
 # wave2text
