@@ -3,7 +3,7 @@
 
 # wave2text
 
-wave2text is a simple Rust program for generating pulse waveforms as
+wave2text is a simple Rust program for generating pulsatile waveforms as
 text files (WiP).
 
 ## License
