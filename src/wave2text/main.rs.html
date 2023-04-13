@@ -16,23 +16,81 @@
 <span id="16">16</span>
 <span id="17">17</span>
 <span id="18">18</span>
-</pre><pre class="rust"><code><span class="kw">use </span>serde_json::{<span class="prelude-ty">Result</span>, Value};
+<span id="19">19</span>
+<span id="20">20</span>
+<span id="21">21</span>
+<span id="22">22</span>
+<span id="23">23</span>
+<span id="24">24</span>
+<span id="25">25</span>
+<span id="26">26</span>
+<span id="27">27</span>
+<span id="28">28</span>
+<span id="29">29</span>
+<span id="30">30</span>
+<span id="31">31</span>
+<span id="32">32</span>
+<span id="33">33</span>
+<span id="34">34</span>
+<span id="35">35</span>
+<span id="36">36</span>
+<span id="37">37</span>
+<span id="38">38</span>
+<span id="39">39</span>
+<span id="40">40</span>
+<span id="41">41</span>
+<span id="42">42</span>
+<span id="43">43</span>
+<span id="44">44</span>
+<span id="45">45</span>
+<span id="46">46</span>
+<span id="47">47</span>
+</pre><pre class="rust"><code><span class="kw">use </span>serde::{Deserialize, Serialize};
+<span class="kw">use </span>std::error::Error;
 <span class="kw">use </span>std::fs;
+
+<span class="attribute">#[derive(Serialize, Deserialize)]
+</span><span class="kw">struct </span>Settings {
+    pulse_path: String,
+    sample_rate_hz: f64,
+}
+
+<span class="kw">fn </span>get_settings(file_path: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;Settings, Box&lt;<span class="kw">dyn </span>Error&gt;&gt; {
+    <span class="kw">let </span>ini_data: String = fs::read_to_string(file_path)<span class="question-mark">?</span>;
+    <span class="kw">let </span>settings: Settings = serde_json::from_str(<span class="kw-2">&amp;</span>ini_data)<span class="question-mark">?</span>;
+
+    <span class="prelude-val">Ok</span>(settings)
+}
+
+<span class="kw">fn </span>wave_gen(waveform_pre: Vec&lt;f64&gt;, pulse_shape: Vec&lt;f64&gt;, phase_hz: f64, sample_rate_hz: f64, duration_sec: f64) -&gt; Vec&lt;f64&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>waveform: Vec&lt;f64&gt; = Vec::from(waveform_pre);
+
+    <span class="kw">let </span>period_sec: f64 = <span class="number">1.0</span>/phase_hz;
+    <span class="kw">let </span>pulse_count_final = (phase_hz * duration_sec).ceil() <span class="kw">as </span>u32;
+    <span class="kw">let </span>wave_len_final: f64 = (sample_rate_hz * duration_sec).round();
+
+    <span class="kw">let </span><span class="kw-2">mut </span>waveform_new: Vec&lt;f64&gt; = Vec::new();
+    <span class="kw">for </span>pulse_count <span class="kw">in </span><span class="number">0</span>..pulse_count_final {
+        waveform_new.extend(<span class="kw-2">&amp;</span>pulse_shape);
+
+        <span class="kw">let </span>wave_len_target = f64::min(wave_len_final, (period_sec * sample_rate_hz * (pulse_count <span class="kw">as </span>f64)).round()) <span class="kw">as </span>usize;
+        <span class="kw">let </span>zeros: Vec&lt;f64&gt; = <span class="macro">vec!</span>[<span class="number">0.0</span>; wave_len_target - waveform_new.len()];
+        waveform_new.extend(zeros)
+    }
+
+    waveform.extend(waveform_new);
+    waveform
+}
 
 <span class="kw">fn </span>main() {
     <span class="kw">let </span>ini_path: <span class="kw-2">&amp;</span>str = <span class="string">&quot;ini.json&quot;</span>;
-
-    <span class="kw">let </span>ini_str: String = fs::read_to_string(ini_path)
-        .expect(<span class="string">&quot;Error reading ini.json&quot;</span>);
-    <span class="kw">let </span>ini_vars: Value = serde_json::from_str(<span class="kw-2">&amp;</span>ini_str)
-        .expect(<span class="string">&quot;Error interpreting ini.json&quot;</span>);
-
-    <span class="kw">let </span>pulse_path = ini_vars[<span class="string">&quot;pulse_path&quot;</span>].as_str().expect(<span class="string">&quot;Error interpreting pulse_path variable&quot;</span>);
-
-    <span class="kw">let </span>pulse_str: String = fs::read_to_string(pulse_path)
+    <span class="kw">let </span>settings: Settings = <span class="kw">match </span>get_settings(ini_path) {
+        <span class="prelude-val">Ok</span>(settings) =&gt; settings,
+        <span class="prelude-val">Err</span>(error) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Problem loading ini.json: {}&quot;</span>, error)
+    };
+    <span class="kw">let </span>pulse: String = fs::read_to_string(settings.pulse_path)
         .expect(<span class="string">&quot;Error reading pulse shape&quot;</span>);
-
-    <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, pulse_str)
+    <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, pulse)
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="wave2text" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.1 (90743e729 2023-01-10)" ></div></body></html>

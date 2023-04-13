@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":[["main",""]]};
+window.SIDEBAR_ITEMS = {"fn":[["get_settings",""],["main",""],["wave_gen",""]],"struct":[["Settings",""]]};

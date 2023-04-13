@@ -1,0 +1,3 @@
+(function() {var implementors = {
+"wave2text":[["impl <a class=\"trait\" href=\"https://docs.rs/serde/1.0.160/serde/ser/trait.Serialize.html\" title=\"trait serde::ser::Serialize\">Serialize</a> for <a class=\"struct\" href=\"wave2text/struct.Settings.html\" title=\"struct wave2text::Settings\">Settings</a>"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
