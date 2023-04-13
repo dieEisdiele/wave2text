@@ -6,12 +6,22 @@ use std::io;
 
 fn main() {
     let settings: Settings = match get_ini_settings("ini.json") {
-        Ok(settings) => settings,
-        Err(error) => panic!("problem loading ini.json: {}", error)
+        Ok(json) => json,
+        Err(error) => {
+            println!("error loading ini.json: {}", error);
+            println!("Loading default settings...");
+            let default_settings = Settings {
+                pulse_path: String::from("pulse.txt"),
+                sample_rate_hz: 100000.0,
+                phase_duration_presets: Vec::new()
+            };
+            default_settings
+        },
     };
-    let pulse: String = fs::read_to_string(settings.pulse_path)
-        .expect("error reading pulse shape");
-
+    let pulse: Vec<f64> = match get_pulse_shape(&settings.pulse_path) {
+        Ok(vec) => vec,
+        Err(error) => panic!("error loading pulse shape from file: {}", error),
+    };
 
     println!("{}{}", NOTICE, LOGO);
     loop {
@@ -34,6 +44,17 @@ fn get_ini_settings(file_path: &str) -> Result<Settings, Box<dyn Error>> {
     let settings: Settings = serde_json::from_str(&ini_data)?;
 
     Ok(settings)
+}
+
+/// Loads pulse shape from TXT file.
+fn get_pulse_shape(file_path: &str) -> Result<Vec<f64>, Box<dyn Error>> {
+    let pulse_string = fs::read_to_string(file_path)?;
+    let pulse_string: Vec<&str> = pulse_string.split("\r\n").collect();
+    let mut pulse_shape: Vec<f64> = Vec::new();
+    for sample in 0..pulse_string.len() {
+        pulse_shape.push(pulse_string[sample].parse::<f64>()?);
+    }
+    Ok(pulse_shape)
 }
 
 /// Brings up the menu and returns the input if valid.
@@ -124,12 +145,14 @@ const LOGO: &'static str = r#"
 "#;
 
 /// Lists user options and how to call them.
-const MENU: &'static str = r#"What would you like to do? Please enter a number 1-4.
+const MENU: &'static str = r#"What would you like to do?
 
 [1]. Edit waveform.
 [2]. Clear waveform.
 [3]. Save waveform.
 [4]. Exit program.
+
+Please enter a number 1-4...
 "#;
 
 /// Prompt to indicate what the user can input.
