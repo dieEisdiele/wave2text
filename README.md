@@ -27,8 +27,7 @@ Contact: <dieeisdiele.ts@gmail.com>
 
 ### Crates (MIT License)
 
-- serde
-- serde_json
+- serde/serde_json
 
 Permission is hereby granted, free of charge, to any
 person obtaining a copy of this software and associated

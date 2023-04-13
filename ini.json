@@ -1,4 +1,8 @@
 {
     "pulse_path": "pulse.txt",
-    "sample_rate_hz": 100000.0
+    "sample_rate_hz": 100000.0,
+    "phase_duration_presets": [
+        [1, 5],
+        [2, 10]
+    ]
 }

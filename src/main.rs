@@ -1,21 +1,75 @@
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::fs;
+use std::io;
 
-#[derive(Serialize, Deserialize)]
-struct Settings {
-    pulse_path: String,
-    sample_rate_hz: f64,
+
+fn main() {
+    let settings: Settings = match get_ini_settings("ini.json") {
+        Ok(settings) => settings,
+        Err(error) => panic!("problem loading ini.json: {}", error)
+    };
+    let pulse: String = fs::read_to_string(settings.pulse_path)
+        .expect("error reading pulse shape");
+
+
+    println!("{}{}", NOTICE, LOGO);
+    loop {
+        match terminal_menu() {
+            1 => println!("Edit waveform."),
+            2 => println!("Clear waveform."),
+            3 => println!("Save waveform."),
+            4 => if confirm_exit() == true {
+                break
+            } else {continue},
+            _ => (),
+        };
+    };
 }
 
-fn get_settings(file_path: &str) -> Result<Settings, Box<dyn Error>> {
+
+/// Loads saved settings from JSON file.
+fn get_ini_settings(file_path: &str) -> Result<Settings, Box<dyn Error>> {
     let ini_data: String = fs::read_to_string(file_path)?;
     let settings: Settings = serde_json::from_str(&ini_data)?;
 
     Ok(settings)
 }
 
-fn wave_gen(waveform_pre: Vec<f64>, pulse_shape: Vec<f64>, phase_hz: f64, sample_rate_hz: f64, duration_sec: f64) -> Vec<f64> {
+/// Brings up the menu and returns the input if valid.
+fn terminal_menu() -> u8 {
+    println!("{}", MENU);
+
+    loop {
+        let mut input = String::new();
+        match io::stdin().read_line(&mut input) {
+            Ok(_) => (),
+            Err(error) => {
+                println!("error: {}", error);
+                println!("{}", INPUT_PROMPT);
+                continue;
+            },
+        }
+
+        match input.trim().parse::<u8>() {
+            Ok(num) => if num > 0 && num < 5 {
+                return num
+            } else {
+                    println!("error: number outside valid range");
+                    println!("{}", INPUT_PROMPT);
+                    continue;
+            },
+            Err(error) => {
+                println!("error: {}", error);
+                println!("{}", INPUT_PROMPT);
+                continue;
+            },
+        };
+    }
+}
+
+/// Constructs a new waveform in which the provided pulse repeats as specified, and appends it to the end of the existing waveform.
+fn wave_gen(waveform_pre: Vec<f64>, pulse_shape: Vec<f64>, sample_rate_hz: f64, phase_hz: f64, duration_sec: f64) -> Vec<f64> {
     let mut waveform: Vec<f64> = Vec::from(waveform_pre);
 
     let period_sec: f64 = 1.0/phase_hz;
@@ -35,13 +89,48 @@ fn wave_gen(waveform_pre: Vec<f64>, pulse_shape: Vec<f64>, phase_hz: f64, sample
     waveform
 }
 
-fn main() {
-    let ini_path: &str = "ini.json";
-    let settings: Settings = match get_settings(ini_path) {
-        Ok(settings) => settings,
-        Err(error) => panic!("Problem loading ini.json: {}", error)
-    };
-    let pulse: String = fs::read_to_string(settings.pulse_path)
-        .expect("Error reading pulse shape");
-    println!("{}", pulse)
+/// Confirms that the user wants to exit.
+fn confirm_exit() -> bool {
+    println!("Are you sure you want to quit?");
+    true
 }
+
+
+/// Format to store/read settings in ini.json
+#[derive(Serialize, Deserialize)]
+struct Settings {
+    pulse_path: String,
+    sample_rate_hz: f64,
+    phase_duration_presets: Vec<(f64, f64)>,
+}
+
+
+/// Copyright notice to print on startup.
+const NOTICE: &'static str = r#"wave2text  Copyright (C) 2022  Tom Su
+This program comes with ABSOLUTELY NO WARRANTY.
+This is free software, and you are welcome to redistribute it under certain
+conditions.
+See LICENSE.txt for details.
+
+"#;
+
+/// Logo to print on startup.
+const LOGO: &'static str = r#"
+   _          _   ___       _____   _____
+  / \        / | |   |    _|     | |     \
+-'   \  /\  /  |_|   |   |       | |      `-
+      \/  \/         |___|       |_|
+
+"#;
+
+/// Lists user options and how to call them.
+const MENU: &'static str = r#"What would you like to do? Please enter a number 1-4.
+
+[1]. Edit waveform.
+[2]. Clear waveform.
+[3]. Save waveform.
+[4]. Exit program.
+"#;
+
+/// Prompt to indicate what the user can input.
+const INPUT_PROMPT: &'static str = "Please enter a valid number 1-4.";
