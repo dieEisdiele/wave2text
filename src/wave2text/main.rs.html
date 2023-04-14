@@ -159,7 +159,6 @@
 <span id="159">159</span>
 <span id="160">160</span>
 <span id="161">161</span>
-<span id="162">162</span>
 </pre><pre class="rust"><code><span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>std::error::Error;
 <span class="kw">use </span>std::fs;
@@ -224,7 +223,7 @@
 
 <span class="doccomment">/// Brings up the menu and returns the input if valid.
 </span><span class="kw">fn </span>terminal_menu() -&gt; u8 {
-    <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, MENU);
+    <span class="macro">println!</span>(<span class="string">&quot;{}{}&quot;</span>, MENU, INPUT_PROMPT);
 
     <span class="kw">loop </span>{
         <span class="kw">let </span><span class="kw-2">mut </span>input = String::new();
@@ -317,10 +316,9 @@ See LICENSE.txt for details.
 [3]. Save waveform.
 [4]. Exit program.
 
-Please enter a number 1-4...
 &quot;#</span>;
 
 <span class="doccomment">/// Prompt to indicate what the user can input.
-</span><span class="kw">const </span>INPUT_PROMPT: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str = <span class="string">&quot;Please enter a valid number 1-4.&quot;</span>;
+</span><span class="kw">const </span>INPUT_PROMPT: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str = <span class="string">&quot;Please enter a number 1-4.&quot;</span>;
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="wave2text" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.66.1 (90743e729 2023-01-10)" ></div></body></html>
