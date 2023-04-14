@@ -5,23 +5,26 @@ use std::io;
 
 
 fn main() {
-    let settings: Settings = match get_ini_settings("ini.json") {
+    let settings: Settings = match get_settings("settings.json") {
         Ok(json) => json,
         Err(error) => {
             println!("error loading ini.json: {}", error);
             println!("Loading default settings...");
-            let default_settings = Settings {
+            let default = Settings {
                 pulse_path: String::from("pulse.txt"),
                 sample_rate_hz: 100000.0,
                 phase_duration_presets: Vec::new()
             };
-            default_settings
+            default
         },
     };
     let pulse: Vec<f64> = match get_pulse_shape(&settings.pulse_path) {
         Ok(vec) => vec,
         Err(error) => panic!("error loading pulse shape from file: {}", error),
     };
+
+    let waveform: Vec<f64> = Vec::new();
+    let wave_history: Vec<&str> = Vec::new();
 
     println!("{}{}", NOTICE, LOGO);
     loop {
@@ -39,7 +42,7 @@ fn main() {
 
 
 /// Loads saved settings from JSON file.
-fn get_ini_settings(file_path: &str) -> Result<Settings, Box<dyn Error>> {
+fn get_settings(file_path: &str) -> Result<Settings, Box<dyn Error>> {
     let ini_data: String = fs::read_to_string(file_path)?;
     let settings: Settings = serde_json::from_str(&ini_data)?;
 
