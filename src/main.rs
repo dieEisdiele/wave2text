@@ -62,7 +62,7 @@ fn get_pulse_shape(file_path: &str) -> Result<Vec<f64>, Box<dyn Error>> {
 
 /// Brings up the menu and returns the input if valid.
 fn terminal_menu() -> u8 {
-    println!("{}", MENU);
+    println!("{}{}", MENU, INPUT_PROMPT);
 
     loop {
         let mut input = String::new();
@@ -155,8 +155,7 @@ const MENU: &'static str = r#"What would you like to do?
 [3]. Save waveform.
 [4]. Exit program.
 
-Please enter a number 1-4...
 "#;
 
 /// Prompt to indicate what the user can input.
-const INPUT_PROMPT: &'static str = "Please enter a valid number 1-4.";
+const INPUT_PROMPT: &'static str = "Please enter a number 1-4.";
