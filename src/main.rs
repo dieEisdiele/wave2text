@@ -120,7 +120,7 @@ fn confirm_exit() -> bool {
 }
 
 
-/// Format to store/read settings in ini.json
+/// Format to store/read settings in JSON file.
 #[derive(Serialize, Deserialize)]
 struct Settings {
     pulse_path: String,
