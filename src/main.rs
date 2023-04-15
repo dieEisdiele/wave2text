@@ -63,13 +63,18 @@ fn main() {
                 let pulse_temp = pulse.to_vec();
                 (waveform, wave_history) = edit_waveform(wave_history, waveform, pulse_temp, sample_rate_hz);
             },
-            2 => println!("View waveform history."),
+            2 => {
+                let wave_history_temp = wave_history.to_vec();
+                for item in wave_history_temp {
+                println!("{}", item)
+                }
+            },
             3 => if confirm("Are you sure you want to clear the current waveform? Enter [Y] to confirm, or press any other button to return to the menu.") {
                 waveform.clear();
                 wave_history.clear();
                 println!("Waveform cleared.");
             } else {continue},
-            4 => println!("Save waveform."),
+            4 => println!("Export waveform."),
             5 => if confirm("Are you sure you want to exit the program? Enter [Y] to confirm, or press any other button to return to the menu.") {
                 println!("Exiting...");
                 break
@@ -108,7 +113,7 @@ What would you like to do?
     [1]. Edit waveform.
     [2]. View waveform history.
     [3]. Clear waveform.
-    [4]. Save waveform.
+    [4]. Export waveform.
     [5]. Exit program.
     "#;
     let input_prompt: &str = "Please enter a number 1-4.";
@@ -159,7 +164,10 @@ fn edit_waveform(wave_history_pre: Vec<String>, waveform_pre: Vec<f64>, pulse_sh
     let waveform_new: Vec<f64> = wave_gen(waveform_pre, pulse_shape, sample_rate_hz, pulse_frequency_hz, duration_sec);
 
     let mut wave_history: Vec<String> = Vec::from(wave_history_pre);
-    let wave_history_new: String = format!("    Sampling rate:   {} Hz\n    Pulse frequency: {} Hz\n    Duration:        {} s\n\n", sample_rate_hz, pulse_frequency_hz, duration_sec);
+    let wave_history_new: String = format!("
+    Sampling rate:   {} Hz
+    Pulse frequency: {} Hz
+    Duration:        {} s", sample_rate_hz, pulse_frequency_hz, duration_sec);
     wave_history.push(wave_history_new);
 
     return (waveform_new, wave_history)
