@@ -233,8 +233,8 @@ fn wave_gen(waveform_pre: Vec<f64>, pulse_shape: Vec<f64>, sample_rate_hz: f64, 
     for pulse_count in 0..pulse_count_final {
         waveform_new.extend(&pulse_shape);
 
-        let wave_len_target = f64::min(wave_len_final, (period_sec * sample_rate_hz * (pulse_count as f64)).round()) as usize;
-        let zeros: Vec<f64> = vec![0.0; wave_len_target - waveform_new.len()];          // ! This calculation is broken
+        let wave_len_target = f64::min(wave_len_final, (period_sec * sample_rate_hz * (pulse_count as f64 + 1.0)).round()) as usize;
+        let zeros: Vec<f64> = vec![0.0; wave_len_target - waveform_new.len()];
         waveform_new.extend(zeros)
     }
 
