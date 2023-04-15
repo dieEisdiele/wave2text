@@ -42,16 +42,21 @@ fn main() {
     };
 
     // Define vectors to store waveform in
-    let waveform: Vec<f64> = Vec::new();
-    let wave_history: Vec<&str> = Vec::new();
+    let mut waveform: Vec<f64> = Vec::new();
+    let mut wave_history: Vec<&str> = Vec::new();
 
     // Main program loop
     loop {
         match terminal_menu() {
             1 => println!("Edit waveform."),
-            2 => println!("Clear waveform."),
+            2 => if confirm("clear the current waveform") == true {
+                waveform.clear();
+                wave_history.clear();
+                println!("Waveform cleared.");
+            } else {continue},
             3 => println!("Save waveform."),
-            4 => if confirm_exit() == true {
+            4 => if confirm("exit the program") == true {
+                println!("Exiting...");
                 break
             } else {continue},
             _ => (),
@@ -122,6 +127,9 @@ What would you like to do?
     }
 }
 
+/// User menu for editing the current waveform.
+
+
 /// Constructs a new waveform in which the provided pulse repeats as specified, and appends it to the end of the existing waveform.
 fn wave_gen(waveform_pre: Vec<f64>, pulse_shape: Vec<f64>, sample_rate_hz: f64, phase_hz: f64, duration_sec: f64) -> Vec<f64> {
     let mut waveform: Vec<f64> = Vec::from(waveform_pre);
@@ -144,8 +152,8 @@ fn wave_gen(waveform_pre: Vec<f64>, pulse_shape: Vec<f64>, sample_rate_hz: f64, 
 }
 
 /// Confirms that the user wants to exit.
-fn confirm_exit() -> bool {
-    println!("Are you sure you want to quit? Enter [Y] to confirm, or press any other button to return to the menu.");
+fn confirm(action: &str) -> bool {
+    println!("Are you sure you want to {}? Enter [Y] to confirm, or press any other button to return to the menu.", action);
 
     let mut input = String::new();
     match io::stdin().read_line(&mut input) {
@@ -153,7 +161,7 @@ fn confirm_exit() -> bool {
         Err(_) => return false
         }
     input = input.trim().to_lowercase();
-    
+
     if input == "y" || input == "yes" {
         return true
     } else {
