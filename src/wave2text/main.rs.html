@@ -268,6 +268,14 @@
 <span id="268">268</span>
 <span id="269">269</span>
 <span id="270">270</span>
+<span id="271">271</span>
+<span id="272">272</span>
+<span id="273">273</span>
+<span id="274">274</span>
+<span id="275">275</span>
+<span id="276">276</span>
+<span id="277">277</span>
+<span id="278">278</span>
 </pre><pre class="rust"><code><span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>std::error::Error;
 <span class="kw">use </span>std::fs;
@@ -333,13 +341,18 @@
                 <span class="kw">let </span>pulse_temp = pulse.to_vec();
                 (waveform, wave_history) = edit_waveform(wave_history, waveform, pulse_temp, sample_rate_hz);
             },
-            <span class="number">2 </span>=&gt; <span class="macro">println!</span>(<span class="string">&quot;View waveform history.&quot;</span>),
+            <span class="number">2 </span>=&gt; {
+                <span class="kw">let </span>wave_history_temp = wave_history.to_vec();
+                <span class="kw">for </span>item <span class="kw">in </span>wave_history_temp {
+                <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, item)
+                }
+            },
             <span class="number">3 </span>=&gt; <span class="kw">if </span>confirm(<span class="string">&quot;Are you sure you want to clear the current waveform? Enter [Y] to confirm, or press any other button to return to the menu.&quot;</span>) {
                 waveform.clear();
                 wave_history.clear();
                 <span class="macro">println!</span>(<span class="string">&quot;Waveform cleared.&quot;</span>);
             } <span class="kw">else </span>{<span class="kw">continue</span>},
-            <span class="number">4 </span>=&gt; <span class="macro">println!</span>(<span class="string">&quot;Save waveform.&quot;</span>),
+            <span class="number">4 </span>=&gt; <span class="macro">println!</span>(<span class="string">&quot;Export waveform.&quot;</span>),
             <span class="number">5 </span>=&gt; <span class="kw">if </span>confirm(<span class="string">&quot;Are you sure you want to exit the program? Enter [Y] to confirm, or press any other button to return to the menu.&quot;</span>) {
                 <span class="macro">println!</span>(<span class="string">&quot;Exiting...&quot;</span>);
                 <span class="kw">break
@@ -378,7 +391,7 @@ What would you like to do?
     [1]. Edit waveform.
     [2]. View waveform history.
     [3]. Clear waveform.
-    [4]. Save waveform.
+    [4]. Export waveform.
     [5]. Exit program.
     &quot;#</span>;
     <span class="kw">let </span>input_prompt: <span class="kw-2">&amp;</span>str = <span class="string">&quot;Please enter a number 1-4.&quot;</span>;
@@ -429,7 +442,10 @@ What would you like to do?
     <span class="kw">let </span>waveform_new: Vec&lt;f64&gt; = wave_gen(waveform_pre, pulse_shape, sample_rate_hz, pulse_frequency_hz, duration_sec);
 
     <span class="kw">let </span><span class="kw-2">mut </span>wave_history: Vec&lt;String&gt; = Vec::from(wave_history_pre);
-    <span class="kw">let </span>wave_history_new: String = <span class="macro">format!</span>(<span class="string">&quot;    Sampling rate:   {} Hz\n    Pulse frequency: {} Hz\n    Duration:        {} s\n\n&quot;</span>, sample_rate_hz, pulse_frequency_hz, duration_sec);
+    <span class="kw">let </span>wave_history_new: String = <span class="macro">format!</span>(<span class="string">&quot;
+    Sampling rate:   {} Hz
+    Pulse frequency: {} Hz
+    Duration:        {} s&quot;</span>, sample_rate_hz, pulse_frequency_hz, duration_sec);
     wave_history.push(wave_history_new);
 
     <span class="kw">return </span>(waveform_new, wave_history)
@@ -503,9 +519,9 @@ What would you like to do?
     <span class="kw">for </span>pulse_count <span class="kw">in </span><span class="number">0</span>..pulse_count_final {
         waveform_new.extend(<span class="kw-2">&amp;</span>pulse_shape);
 
-        <span class="kw">let </span>wave_len_target = f64::min(wave_len_final, (period_sec * sample_rate_hz * (pulse_count <span class="kw">as </span>f64)).round()) <span class="kw">as </span>usize;
-        <span class="kw">let </span>zeros: Vec&lt;f64&gt; = <span class="macro">vec!</span>[<span class="number">0.0</span>; wave_len_target - waveform_new.len()];          <span class="comment">// ! This calculation is broken
-        </span>waveform_new.extend(zeros)
+        <span class="kw">let </span>wave_len_target = f64::min(wave_len_final, (period_sec * sample_rate_hz * (pulse_count <span class="kw">as </span>f64 + <span class="number">1.0</span>)).round()) <span class="kw">as </span>usize;
+        <span class="kw">let </span>zeros: Vec&lt;f64&gt; = <span class="macro">vec!</span>[<span class="number">0.0</span>; wave_len_target - waveform_new.len()];
+        waveform_new.extend(zeros)
     }
 
     waveform.extend(waveform_new);
