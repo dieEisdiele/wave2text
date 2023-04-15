@@ -5,6 +5,24 @@ use std::io;
 
 
 fn main() {
+    // Splash screen
+    let notice: &str = r#"wave2text  Copyright (C) 2022  Tom Su
+    This program comes with ABSOLUTELY NO WARRANTY.
+    This is free software, and you are welcome to redistribute it under certain
+    conditions.
+    See LICENSE.txt for details.
+    
+    "#;
+    let logo: &str = r#"
+       _          _   ___       _____   _____
+      / \        / | |   |    _|     | |     \
+    -'   \  /\  /  |_|   |   |       | |      `-
+          \/  \/         |___|       |_|
+    
+    "#;
+    println!("{}{}", notice, logo);
+
+    // Load settings from JSON file and get the pulse shape
     let settings: Settings = match get_settings("settings.json") {
         Ok(json) => json,
         Err(error) => {
@@ -23,10 +41,11 @@ fn main() {
         Err(error) => panic!("error loading pulse shape from file: {}", error),
     };
 
+    // Define vectors to store waveform in
     let waveform: Vec<f64> = Vec::new();
     let wave_history: Vec<&str> = Vec::new();
 
-    println!("{}{}", NOTICE, LOGO);
+    // Main program loop
     loop {
         match terminal_menu() {
             1 => println!("Edit waveform."),
@@ -62,15 +81,26 @@ fn get_pulse_shape(file_path: &str) -> Result<Vec<f64>, Box<dyn Error>> {
 
 /// Brings up the menu and returns the input if valid.
 fn terminal_menu() -> u8 {
-    println!("{}{}", MENU, INPUT_PROMPT);
+    // Define strings for showing user options and how to call them.
+    let menu: &str = r#"
+What would you like to do?
+    
+    [1]. Edit waveform.
+    [2]. Clear waveform.
+    [3]. Save waveform.
+    [4]. Exit program.
+    "#;
+    let input_prompt: &str = "Please enter a number 1-4.";
 
+    // Print menu and get user input
+    println!("{}\n{}", menu, input_prompt);
     loop {
         let mut input = String::new();
         match io::stdin().read_line(&mut input) {
             Ok(_) => (),
             Err(error) => {
                 println!("error: {}", error);
-                println!("{}", INPUT_PROMPT);
+                println!("{}", input_prompt);
                 continue;
             },
         }
@@ -80,12 +110,12 @@ fn terminal_menu() -> u8 {
                 return num
             } else {
                     println!("error: number outside valid range");
-                    println!("{}", INPUT_PROMPT);
+                    println!("{}", input_prompt);
                     continue;
             },
             Err(error) => {
                 println!("error: {}", error);
-                println!("{}", INPUT_PROMPT);
+                println!("{}", input_prompt);
                 continue;
             },
         };
@@ -115,8 +145,20 @@ fn wave_gen(waveform_pre: Vec<f64>, pulse_shape: Vec<f64>, sample_rate_hz: f64, 
 
 /// Confirms that the user wants to exit.
 fn confirm_exit() -> bool {
-    println!("Are you sure you want to quit?");
-    true
+    println!("Are you sure you want to quit? Enter [Y] to confirm, or press any other button to return to the menu.");
+
+    let mut input = String::new();
+    match io::stdin().read_line(&mut input) {
+        Ok(_) => (),
+        Err(_) => return false
+        }
+    input = input.trim().to_lowercase();
+    
+    if input == "y" || input == "yes" {
+        return true
+    } else {
+        return false
+    }
 }
 
 
@@ -127,35 +169,3 @@ struct Settings {
     sample_rate_hz: f64,
     phase_duration_presets: Vec<(f64, f64)>,
 }
-
-
-/// Copyright notice to print on startup.
-const NOTICE: &'static str = r#"wave2text  Copyright (C) 2022  Tom Su
-This program comes with ABSOLUTELY NO WARRANTY.
-This is free software, and you are welcome to redistribute it under certain
-conditions.
-See LICENSE.txt for details.
-
-"#;
-
-/// Logo to print on startup.
-const LOGO: &'static str = r#"
-   _          _   ___       _____   _____
-  / \        / | |   |    _|     | |     \
--'   \  /\  /  |_|   |   |       | |      `-
-      \/  \/         |___|       |_|
-
-"#;
-
-/// Lists user options and how to call them.
-const MENU: &'static str = r#"What would you like to do?
-
-[1]. Edit waveform.
-[2]. Clear waveform.
-[3]. Save waveform.
-[4]. Exit program.
-
-"#;
-
-/// Prompt to indicate what the user can input.
-const INPUT_PROMPT: &'static str = "Please enter a number 1-4.";
