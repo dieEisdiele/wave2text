@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::error::Error;
+use std::any;
 use std::fs;
 use std::io;
 
@@ -63,8 +64,9 @@ See LICENSE.txt for details.
     loop {
         match terminal_menu() {
             // TODO 2 Add special case for 0Hz (don't insert any pulses)
-            // TODO 3 Allow user to use presets
-            // TODO 4 Allow user to save presets
+            // TODO 3 Add checks that inputs are valid (i.e. floats that must be positive are positive)
+            // TODO 4 Allow user to use presets
+            // TODO 5 Allow user to save presets
             1 => {
                 let pulse_temp: Vec<f64> = pulse.to_vec();
                 (waveform, wave_history) = edit_waveform(wave_history, waveform, pulse_temp, sample_rate_hz, filler);
@@ -101,15 +103,17 @@ See LICENSE.txt for details.
             4 => println!("Export waveform."),
 
 
-            // TODO 5 Query user to save new settings
+            // TODO 6 Query user to save new settings
             5 => {
+                let input_prompt: &str = "Please enter a positive number.";
+
                 sample_rate_hz = loop {
                     println!("\nSampling rate (Hz): {}", sample_rate_hz);
                     if confirm("Is this correct? Enter [Y] to confirm, or press any other key to enter a different sampling rate.") {
                         break sample_rate_hz
                     } else {
                         println!("Please enter new sampling rate.");
-                        break get_user_float()
+                        break get_user_num(input_prompt)
                     };
                 };
 
@@ -119,7 +123,7 @@ See LICENSE.txt for details.
                         break filler
                     } else {
                         println!("Please enter new filler.");
-                        break get_user_float()
+                        break get_user_num(input_prompt)
                     };
                 };
             },
@@ -155,6 +159,30 @@ fn get_pulse_shape(file_path: &str) -> Result<Vec<f64>, Box<dyn Error>> {
     Ok(pulse_shape)
 }
 
+/// Gets user input and returns a number if valid
+fn get_user_num<T: std::str::FromStr>(prompt: &str) -> T {
+    loop {
+        let mut input = String::new();
+        match io::stdin().read_line(&mut input) {
+            Ok(_) => (),
+            Err(error) => {
+                println!("error: {}", error);
+                println!("{}", prompt);
+                continue;
+            }
+        };
+
+        match input.trim().parse::<T>() {
+            Ok(num) => return num,
+            Err(_) => {
+                println!("error: input cannot be parsed as {}", any::type_name::<T>());
+                println!("{}", prompt);
+                continue;
+            }
+        };
+    };
+}
+
 /// Brings up the menu and returns the input if valid.
 fn terminal_menu() -> u8 {
     // Define strings for showing user options and how to call them.
@@ -174,37 +202,27 @@ What would you like to do?
     // Print menu and get user input
     println!("{}\n{}", menu, input_prompt);
     loop {
-        let mut input = String::new();
-        match io::stdin().read_line(&mut input) {
-            Ok(_) => (),
-            Err(error) => {
-                println!("error: {}", error);
-                println!("{}", input_prompt);
-                continue;
-            }
-        };
+        let input: u8 = get_user_num(input_prompt);
 
-        match input.trim().parse::<u8>() {
-            Ok(num) => if num > 0 && num < 7 {
-                return num
-            } else {
-                    println!("error: number outside valid range");
-                    println!("{}", input_prompt);
-                    continue;
-            },
-            Err(error) => {
-                println!("error: {}", error);
-                println!("{}", input_prompt);
-                continue;
-            }
+        if input > 0 && input < 7 {
+            return input
+        } else {
+            println!("error: number outside valid range");
+            println!("{}", input_prompt);
+            continue;
         };
-    }
+    };
 }
 
 /// User menu for editing the current waveform.
 fn edit_waveform(wave_history_pre: Vec<String>, waveform_pre: Vec<f64>, pulse_shape: Vec<f64>, sample_rate_hz: f64, filler: f64) -> (Vec<f64>, Vec<String>) {
+    let input_prompt: &str = "Please enter a positive number.";
     let (pulse_frequency_hz, duration_sec): (f64, f64) = loop {
-        let (pulse_frequency_hz_temp, duration_sec_temp): (f64, f64) = get_wave_variables();
+        println!("\nPulse phase (Hz)");
+        let pulse_frequency_hz_temp: f64 = get_user_num(input_prompt);
+        println!("Duration (s)");
+        let duration_sec_temp: f64 = get_user_num(input_prompt);
+
         println!("\nPulse frequency: {} Hz", pulse_frequency_hz_temp);
         println!("Duration: {} s", duration_sec_temp);
         if confirm("Are these parameters correct? Enter [Y] to confirm, or press any other key to re-enter them.") {
@@ -225,42 +243,6 @@ fn edit_waveform(wave_history_pre: Vec<String>, waveform_pre: Vec<f64>, pulse_sh
     wave_history.push(wave_history_new);
 
     (waveform_new, wave_history)
-}
-
-/// Get user-defined variables
-fn get_wave_variables() -> (f64, f64) {
-    println!("\nPulse phase (Hz)");
-    let pulse_frequency_hz: f64 = get_user_float();
-
-    println!("Duration (s)");
-    let duration_sec: f64 = get_user_float();
-
-    (pulse_frequency_hz, duration_sec)
-}
-
-/// Gets user input and returns a float if valid
-fn get_user_float() -> f64 {
-    let input_prompt: &str = "Please enter a positive number.";
-    loop {
-        let mut input = String::new();
-        match io::stdin().read_line(&mut input) {
-            Ok(_) => (),
-            Err(error) => {
-                println!("error: {}", error);
-                println!("{}", input_prompt);
-                continue;
-            }
-        };
-
-        match input.trim().parse::<f64>() {
-            Ok(num) => return num,
-            Err(error) => {
-                println!("error: {}", error);
-                println!("{}", input_prompt);
-                continue;
-            }
-        };
-    };
 }
 
 /// Constructs a new waveform in which the provided pulse repeats as specified, and appends it to the end of the existing waveform.
