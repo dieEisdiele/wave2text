@@ -26,13 +26,12 @@ See LICENSE.txt for details.
     let settings: Settings = match get_settings("settings.json") {
         Ok(json) => json,
         Err(error) => {
-            println!("error loading ini.json: {}", error);
+            println!("\n\nerror loading ini.json: {}", error);
             println!("Loading default settings...");
             let default = Settings {
                 pulse_path: String::from("pulse.txt"),
                 sample_rate_hz: 100000.0,
-                filler: 0.0,
-                phase_duration_presets: Vec::new()
+                presets_phase_duration_filler: Vec::new()
             };
             // TODO Move settings display after match statement
             // TODO Enable proper preset display
@@ -44,8 +43,8 @@ See LICENSE.txt for details.
             default
         }
     };
+    let mut presets: Vec<(f64, f64, f64)> = settings.presets_phase_duration_filler;
     let mut sample_rate_hz: f64 = settings.sample_rate_hz;
-    let mut filler: f64 = settings.filler;
     let pulse: Vec<f64> = match get_pulse_shape(&settings.pulse_path) {
         Ok(vec) => vec,
         Err(error) => {
@@ -62,18 +61,22 @@ See LICENSE.txt for details.
 
     // Main program loop
     loop {
-        match terminal_menu() {
+        match terminal_menu(sample_rate_hz) {
+            // TODO Allow user to edit waveform using presets
+            1 => println!("Edit by presets."),
+
+
             // TODO 2 Add special case for 0Hz (don't insert any pulses)
             // TODO 3 Add checks that inputs are valid (i.e. floats that must be positive are positive)
             // TODO 4 Allow user to use presets
             // TODO 5 Allow user to save presets
-            1 => {
+            2 => {
                 let pulse_temp: Vec<f64> = pulse.to_vec();
-                (waveform, wave_history) = edit_waveform(wave_history, waveform, pulse_temp, sample_rate_hz, filler);
+                (waveform, wave_history) = edit_waveform(wave_history, waveform, pulse_temp, sample_rate_hz);
             },
 
 
-            2 => {
+            3 => {
                 let wave_history_temp: Vec<String> = wave_history.to_vec();
                 if wave_history_temp.len() == 0 {
                     println!("Waveform is empty. Returning to menu...");
@@ -92,7 +95,7 @@ See LICENSE.txt for details.
             },
 
 
-            3 => if confirm("Are you sure you want to clear the current waveform? Enter [Y] to confirm, or press any other key to return to menu.") {
+            4 => if confirm("Are you sure you want to clear the current waveform? Enter [Y] to confirm, or press any other key to return to menu.") {
                 waveform.clear();
                 wave_history.clear();
                 println!("Waveform cleared.");
@@ -100,36 +103,21 @@ See LICENSE.txt for details.
 
 
             // TODO 1 Allow user to save waveform to .TXT file
-            4 => println!("Export waveform."),
+            5 => println!("Export waveform."),
 
 
-            // TODO 6 Query user to save new settings
-            5 => {
-                let input_prompt: &str = "Please enter a positive number.";
+            // TODO Allow user to edit presets.
+            6 => println!("Edit presets."),
 
-                sample_rate_hz = loop {
-                    println!("\nSampling rate (Hz): {}", sample_rate_hz);
-                    if confirm("Is this correct? Enter [Y] to confirm, or press any other key to enter a different sampling rate.") {
-                        break sample_rate_hz
-                    } else {
-                        println!("Please enter new sampling rate.");
-                        break get_user_num(input_prompt)
-                    };
-                };
 
-                filler = loop {
-                    println!("\nFiller value: {}", filler);
-                    if confirm("Is this correct? Enter [Y] to confirm, or press any other key to enter a different filler.") {
-                        break filler
-                    } else {
-                        println!("Please enter new filler.");
-                        break get_user_num(input_prompt)
-                    };
-                };
+            // TODO 6 Query user to save new sampling rate
+            7 => {
+                println!("Please enter new sampling rate.");
+                sample_rate_hz = get_user_num("Please enter a positive number.")
             },
 
 
-            6 => if confirm("Are you sure you want to exit the program? Enter [Y] to confirm, or press any other key to return to menu.") {
+            8 => if confirm("Are you sure you want to exit the program? Enter [Y] to confirm, or press any other key to return to menu.") {
                 println!("Exiting...");
                 break
             } else {continue},
@@ -184,27 +172,23 @@ fn get_user_num<T: std::str::FromStr>(prompt: &str) -> T {
 }
 
 /// Brings up the menu and returns the input if valid.
-fn terminal_menu() -> u8 {
-    // Define strings for showing user options and how to call them.
-    let menu: &str = r#"
-
-What would you like to do?
-    
-    [1]. Edit waveform.
-    [2]. View waveform history.
-    [3]. Clear waveform.
-    [4]. Export waveform.
-    [5]. View/edit settings.
-    [6]. Exit program.
-    "#;
-    let input_prompt: &str = "Please enter a number 1-6.";
+fn terminal_menu(sample_rate_hz: f64) -> u8 {
+    let input_prompt: &str = "Please enter a number 1-8.";
 
     // Print menu and get user input
-    println!("{}\n{}", menu, input_prompt);
+    println!("\n\nWhat would you like to do?\n
+    [1]. Add presets to waveform.
+    [2]. Add to waveform manually.
+    [3]. View waveform history.
+    [4]. Clear waveform.
+    [5]. Export waveform.
+    [6]. View/edit presets.
+    [7]. Edit sampling rate ({} Hz).
+    [8]. Exit program.\n\n{}", sample_rate_hz, input_prompt);
     loop {
         let input: u8 = get_user_num(input_prompt);
 
-        if input > 0 && input < 7 {
+        if input > 0 && input < 9 {
             return input
         } else {
             println!("error: number outside valid range");
@@ -215,24 +199,27 @@ What would you like to do?
 }
 
 /// User menu for editing the current waveform.
-fn edit_waveform(wave_history_pre: Vec<String>, waveform_pre: Vec<f64>, pulse_shape: Vec<f64>, sample_rate_hz: f64, filler: f64) -> (Vec<f64>, Vec<String>) {
+fn edit_waveform(wave_history_pre: Vec<String>, waveform_pre: Vec<f64>, pulse_shape: Vec<f64>, sample_rate_hz: f64) -> (Vec<f64>, Vec<String>) {
     let input_prompt: &str = "Please enter a positive number.";
-    let (pulse_frequency_hz, duration_sec): (f64, f64) = loop {
+    let (pulse_frequency_hz, duration_sec, filler): (f64, f64, f64) = loop {
         println!("\nPulse phase (Hz)");
         let pulse_frequency_hz_temp: f64 = get_user_num(input_prompt);
         println!("Duration (s)");
         let duration_sec_temp: f64 = get_user_num(input_prompt);
+        println!("Filler value");
+        let filler_temp: f64 = get_user_num(input_prompt);
 
         println!("\nPulse frequency: {} Hz", pulse_frequency_hz_temp);
         println!("Duration: {} s", duration_sec_temp);
+        println!("Filler: {}", filler_temp);
         if confirm("Are these parameters correct? Enter [Y] to confirm, or press any other key to re-enter them.") {
-            break (pulse_frequency_hz_temp, duration_sec_temp)
+            break (pulse_frequency_hz_temp, duration_sec_temp, filler_temp)
         } else {
             continue
         };
     };
 
-    let waveform_new: Vec<f64> = wave_gen(waveform_pre, pulse_shape, sample_rate_hz, filler, pulse_frequency_hz, duration_sec);
+    let waveform_new: Vec<f64> = wave_gen(waveform_pre, pulse_shape, sample_rate_hz, pulse_frequency_hz, duration_sec, filler);
 
     let mut wave_history: Vec<String> = Vec::from(wave_history_pre);
     let wave_history_new: String = format!("
@@ -246,7 +233,7 @@ fn edit_waveform(wave_history_pre: Vec<String>, waveform_pre: Vec<f64>, pulse_sh
 }
 
 /// Constructs a new waveform in which the provided pulse repeats as specified, and appends it to the end of the existing waveform.
-fn wave_gen(waveform_pre: Vec<f64>, pulse_shape: Vec<f64>, sample_rate_hz: f64, filler: f64, pulse_frequency_hz: f64, duration_sec: f64) -> Vec<f64> {
+fn wave_gen(waveform_pre: Vec<f64>, pulse_shape: Vec<f64>, sample_rate_hz: f64, pulse_frequency_hz: f64, duration_sec: f64, filler: f64) -> Vec<f64> {
     let mut waveform: Vec<f64> = Vec::from(waveform_pre);
 
     let period_sec: f64 = 1.0/pulse_frequency_hz;
@@ -290,6 +277,5 @@ fn confirm(query: &str) -> bool {
 struct Settings {
     pulse_path: String,
     sample_rate_hz: f64,
-    filler: f64,
-    phase_duration_presets: Vec<(f64, f64)>,
+    presets_phase_duration_filler: Vec<(f64, f64, f64)>,
 }
