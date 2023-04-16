@@ -7,7 +7,7 @@ use std::io;
 
 fn main() {
     // Splash screen
-    let notice: &str = r#"wave2text  Copyright (C) 2022  Tom Su
+    let notice: &str = r#"wave2text  Copyright (C) 2023  Tom Su
 This program comes with ABSOLUTELY NO WARRANTY.
 This is free software, and you are welcome to redistribute it under certain
 conditions.
