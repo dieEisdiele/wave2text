@@ -38,7 +38,7 @@ See LICENSE.txt for details.
             println!(r#"
     Pulse shape file: "/pulse.txt"
     Sampling rate:    100000 Hz
-    Filler value:     0.0
+    Filler:           0.0
     No presets"#);
             default
         }
@@ -62,10 +62,10 @@ See LICENSE.txt for details.
     // Main program loop
     loop {
         match terminal_menu() {
+            // TODO 2 Add special case for 0Hz (don't insert any pulses)
+            // TODO 3 Allow user to use presets
+            // TODO 4 Allow user to save presets
             1 => {
-                // TODO 2 Add special case for 0Hz (don't insert any pulses)
-                // TODO 3 Allow user to use presets
-                // TODO 4 Allow user to save presets
                 let pulse_temp: Vec<f64> = pulse.to_vec();
                 (waveform, wave_history) = edit_waveform(wave_history, waveform, pulse_temp, sample_rate_hz, filler);
             },
@@ -101,26 +101,25 @@ See LICENSE.txt for details.
             4 => println!("Export waveform."),
 
 
-            // TODO 5 Allow user to edit settings
+            // TODO 5 Query user to save new settings
             5 => {
-                loop {
+                sample_rate_hz = loop {
                     println!("\nSampling rate (Hz): {}", sample_rate_hz);
                     if confirm("Is this correct? Enter [Y] to confirm, or press any other key to enter a different sampling rate.") {
-                        break
+                        break sample_rate_hz
                     } else {
-                        // TODO Query user to enter new sample rate
-                        // TODO Query user if the new sample rate should be saved as default
-                        continue
+                        println!("Please enter new sampling rate.");
+                        break get_user_float()
                     };
                 };
 
-                loop {
+                filler = loop {
                     println!("\nFiller value: {}", filler);
                     if confirm("Is this correct? Enter [Y] to confirm, or press any other key to enter a different filler.") {
-                        break
+                        break filler
                     } else {
-                        // TODO Copy from sampling rate
-                        continue
+                        println!("Please enter new filler.");
+                        break get_user_float()
                     };
                 };
             },
@@ -170,7 +169,7 @@ What would you like to do?
     [5]. View/edit settings.
     [6]. Exit program.
     "#;
-    let input_prompt: &str = "Please enter a number 1-4.";
+    let input_prompt: &str = "Please enter a number 1-6.";
 
     // Print menu and get user input
     println!("{}\n{}", menu, input_prompt);
@@ -230,58 +229,38 @@ fn edit_waveform(wave_history_pre: Vec<String>, waveform_pre: Vec<f64>, pulse_sh
 
 /// Get user-defined variables
 fn get_wave_variables() -> (f64, f64) {
-    let input_prompt: &str = "Please enter a positive number.";
-
-    let mut pulse_frequency_hz = String::new();
-    let mut duration_sec = String::new();
-
     println!("\nPulse phase (Hz)");
-    let pulse_frequency_hz: f64 = loop {
-        match io::stdin().read_line(&mut pulse_frequency_hz) {
-            Ok(_) => (),
-            Err(error) => {
-                println!("error: {}", error);
-                println!("{}", input_prompt);
-                pulse_frequency_hz.clear();
-                continue;
-            }
-        };
-
-        match pulse_frequency_hz.trim().parse::<f64>() {
-            Ok(num) => break num,
-            Err(error) => {
-                println!("error: {}", error);
-                println!("{}", input_prompt);
-                pulse_frequency_hz.clear();
-                continue;
-            }
-        };
-    };
+    let pulse_frequency_hz: f64 = get_user_float();
 
     println!("Duration (s)");
-    let duration_sec: f64 = loop {
-        match io::stdin().read_line(&mut duration_sec) {
+    let duration_sec: f64 = get_user_float();
+
+    (pulse_frequency_hz, duration_sec)
+}
+
+/// Gets user input and returns a float if valid
+fn get_user_float() -> f64 {
+    let input_prompt: &str = "Please enter a positive number.";
+    loop {
+        let mut input = String::new();
+        match io::stdin().read_line(&mut input) {
             Ok(_) => (),
             Err(error) => {
                 println!("error: {}", error);
                 println!("{}", input_prompt);
-                duration_sec.clear();
                 continue;
             }
         };
 
-        match duration_sec.trim().parse::<f64>() {
-            Ok(num) => break num,
+        match input.trim().parse::<f64>() {
+            Ok(num) => return num,
             Err(error) => {
                 println!("error: {}", error);
                 println!("{}", input_prompt);
-                duration_sec.clear();
                 continue;
             }
         };
     };
-
-    (pulse_frequency_hz, duration_sec)
 }
 
 /// Constructs a new waveform in which the provided pulse repeats as specified, and appends it to the end of the existing waveform.

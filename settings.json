@@ -1,8 +1,8 @@
 {
-    "pulse_path": "pulse.txt",
-    "sample_rate_hz": 100000.0,
-    "filler value": 0.0,
-    "phase_duration_presets": [
+    "Pulse shape filepath": "pulse.txt",
+    "Sampling rate (Hz)": 100000.0,
+    "Filler value": 0.0,
+    "Presets [Phase (Hz), Duration (s)]": [
         [20, 5],
         [0, 10]
     ]
