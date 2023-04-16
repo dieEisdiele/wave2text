@@ -279,6 +279,78 @@
 <span id="279">279</span>
 <span id="280">280</span>
 <span id="281">281</span>
+<span id="282">282</span>
+<span id="283">283</span>
+<span id="284">284</span>
+<span id="285">285</span>
+<span id="286">286</span>
+<span id="287">287</span>
+<span id="288">288</span>
+<span id="289">289</span>
+<span id="290">290</span>
+<span id="291">291</span>
+<span id="292">292</span>
+<span id="293">293</span>
+<span id="294">294</span>
+<span id="295">295</span>
+<span id="296">296</span>
+<span id="297">297</span>
+<span id="298">298</span>
+<span id="299">299</span>
+<span id="300">300</span>
+<span id="301">301</span>
+<span id="302">302</span>
+<span id="303">303</span>
+<span id="304">304</span>
+<span id="305">305</span>
+<span id="306">306</span>
+<span id="307">307</span>
+<span id="308">308</span>
+<span id="309">309</span>
+<span id="310">310</span>
+<span id="311">311</span>
+<span id="312">312</span>
+<span id="313">313</span>
+<span id="314">314</span>
+<span id="315">315</span>
+<span id="316">316</span>
+<span id="317">317</span>
+<span id="318">318</span>
+<span id="319">319</span>
+<span id="320">320</span>
+<span id="321">321</span>
+<span id="322">322</span>
+<span id="323">323</span>
+<span id="324">324</span>
+<span id="325">325</span>
+<span id="326">326</span>
+<span id="327">327</span>
+<span id="328">328</span>
+<span id="329">329</span>
+<span id="330">330</span>
+<span id="331">331</span>
+<span id="332">332</span>
+<span id="333">333</span>
+<span id="334">334</span>
+<span id="335">335</span>
+<span id="336">336</span>
+<span id="337">337</span>
+<span id="338">338</span>
+<span id="339">339</span>
+<span id="340">340</span>
+<span id="341">341</span>
+<span id="342">342</span>
+<span id="343">343</span>
+<span id="344">344</span>
+<span id="345">345</span>
+<span id="346">346</span>
+<span id="347">347</span>
+<span id="348">348</span>
+<span id="349">349</span>
+<span id="350">350</span>
+<span id="351">351</span>
+<span id="352">352</span>
+<span id="353">353</span>
 </pre><pre class="rust"><code><span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>std::error::Error;
 <span class="kw">use </span>std::any;
@@ -314,8 +386,8 @@ See LICENSE.txt for details.
                 sample_rate_hz: <span class="number">100000.0</span>,
                 presets_phase_duration_filler: Vec::new()
             };
-            <span class="comment">// TODO Move settings display after match statement
-            // TODO Enable proper preset display
+            <span class="comment">// TODO 8 Move settings display after match statement
+            // TODO 9 Enable proper preset display
             </span><span class="macro">println!</span>(<span class="string">r#&quot;
     Pulse shape file: &quot;/pulse.txt&quot;
     Sampling rate:    100000 Hz
@@ -343,14 +415,62 @@ See LICENSE.txt for details.
     <span class="comment">// Main program loop
     </span><span class="kw">loop </span>{
         <span class="kw">match </span>terminal_menu(sample_rate_hz) {
-            <span class="comment">// TODO Allow user to edit waveform using presets
-            </span><span class="number">1 </span>=&gt; <span class="macro">println!</span>(<span class="string">&quot;Edit by presets.&quot;</span>),
+            <span class="number">1 </span>=&gt; {
+                <span class="kw">let </span>presets_temp: Vec&lt;(f64, f64, f64)&gt; = presets.to_vec();
+                <span class="kw">if </span>presets_temp.len() == <span class="number">0 </span>{
+                    <span class="macro">println!</span>(<span class="string">&quot;No presets found. Returning to menu...&quot;</span>);
+                    <span class="kw">continue</span>;
+                }
+
+                <span class="kw">let </span>input_prompt: <span class="kw-2">&amp;</span>str = <span class="string">&quot;Please enter the preset(s) you would like to add.\nYou can specify more than one by inserting a space between each number.&quot;</span>;
+                <span class="kw">for </span>(n, preset) <span class="kw">in </span>presets_temp.iter().enumerate() {
+                    <span class="macro">println!</span>(<span class="string">&quot;
+    {}
+    Pulse frequency: {} Hz
+    Duration:        {} s
+    Filler:          {}&quot;</span>, n+<span class="number">1</span>, preset.<span class="number">0</span>, preset.<span class="number">1</span>, preset.<span class="number">2</span>);
+                };
+                <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, input_prompt);
+                
+                <span class="kw">let </span>preset_selection: Vec&lt;u32&gt; = <span class="kw">loop </span>{
+                    <span class="kw">let </span><span class="kw-2">mut </span>input = String::new();
+                    <span class="kw">match </span>io::stdin().read_line(<span class="kw-2">&amp;mut </span>input) {
+                        <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; (),
+                        <span class="prelude-val">Err</span>(error) =&gt; {
+                            <span class="macro">println!</span>(<span class="string">&quot;error: {}&quot;</span>, error);
+                            <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, input_prompt);
+                            <span class="kw">continue</span>;
+                        }
+                    };
+
+                    <span class="kw">match </span>input.trim().split(<span class="string">&quot; &quot;</span>).map(|x| x.parse::&lt;u32&gt;()).collect() {
+                        <span class="prelude-val">Ok</span>(vec) =&gt; <span class="kw">break </span>vec,
+                        <span class="prelude-val">Err</span>(error) =&gt; {
+                            <span class="macro">println!</span>(<span class="string">&quot;error: {}&quot;</span>, error);
+                            <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, input_prompt);
+                            <span class="kw">continue</span>;
+                        }
+                    };
+                };
+
+                <span class="kw">for </span>preset_n <span class="kw">in </span>preset_selection {
+                    <span class="kw">let </span>pulse_temp: Vec&lt;f64&gt; = pulse.to_vec();
+                    <span class="kw">let </span>preset_add: (f64, f64, f64) = presets_temp[(preset_n-<span class="number">1</span>) <span class="kw">as </span>usize];
+                    waveform = wave_gen(waveform, pulse_temp, sample_rate_hz, preset_add.<span class="number">0</span>, preset_add.<span class="number">1</span>, preset_add.<span class="number">2</span>);
+                    <span class="kw">let </span>wave_history_new: String = <span class="macro">format!</span>(<span class="string">&quot;
+    Sampling rate:   {} Hz
+    Pulse frequency: {} Hz
+    Duration:        {} s
+    Filler:          {}&quot;</span>, sample_rate_hz, preset_add.<span class="number">0</span>, preset_add.<span class="number">1</span>, preset_add.<span class="number">2</span>);
+                    wave_history.push(wave_history_new);
+                };
+            },
 
 
-            <span class="comment">// TODO 2 Add special case for 0Hz (don&#39;t insert any pulses)
-            // TODO 3 Add checks that inputs are valid (i.e. floats that must be positive are positive)
-            // TODO 4 Allow user to use presets
-            // TODO 5 Allow user to save presets
+            <span class="comment">// TODO 1 Add special case for 0Hz (don&#39;t insert any pulses)
+            // TODO 2 Add checks that inputs are valid (i.e. floats that must be positive are positive)
+            // TODO 3 Allow user to use presets
+            // TODO 4 Allow user to save presets
             </span><span class="number">2 </span>=&gt; {
                 <span class="kw">let </span>pulse_temp: Vec&lt;f64&gt; = pulse.to_vec();
                 (waveform, wave_history) = edit_waveform(wave_history, waveform, pulse_temp, sample_rate_hz);
@@ -361,47 +481,71 @@ See LICENSE.txt for details.
                 <span class="kw">let </span>wave_history_temp: Vec&lt;String&gt; = wave_history.to_vec();
                 <span class="kw">if </span>wave_history_temp.len() == <span class="number">0 </span>{
                     <span class="macro">println!</span>(<span class="string">&quot;Waveform is empty. Returning to menu...&quot;</span>);
-                } <span class="kw">else </span>{
-                    <span class="kw">for </span>item <span class="kw">in </span>wave_history_temp {
-                    <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, item);
-                    };
+                    <span class="kw">continue</span>;
+                }
 
-                    <span class="macro">println!</span>(<span class="string">&quot;\nPress any key to return to menu.&quot;</span>);
-                    <span class="kw">let </span><span class="kw-2">mut </span>input = String::new();
-                    <span class="kw">match </span>io::stdin().read_line(<span class="kw-2">&amp;mut </span>input) {
-                        <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; (),
-                        <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; ()
-                    };
+                <span class="kw">for </span>item <span class="kw">in </span>wave_history_temp {
+                    <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, item);
+                };
+                <span class="macro">println!</span>(<span class="string">&quot;\nPress any key to return to menu.&quot;</span>);
+                <span class="kw">let </span><span class="kw-2">mut </span>input = String::new();
+                <span class="kw">match </span>io::stdin().read_line(<span class="kw-2">&amp;mut </span>input) {
+                    <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; (),
+                    <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; ()
                 };
             },
 
 
-            <span class="number">4 </span>=&gt; <span class="kw">if </span>confirm(<span class="string">&quot;Are you sure you want to clear the current waveform? Enter [Y] to confirm, or press any other key to return to menu.&quot;</span>) {
-                waveform.clear();
-                wave_history.clear();
-                <span class="macro">println!</span>(<span class="string">&quot;Waveform cleared.&quot;</span>);
-            } <span class="kw">else </span>{<span class="kw">continue</span>},
+            <span class="number">4 </span>=&gt; {
+                <span class="kw">if </span>confirm(<span class="string">&quot;Are you sure you want to clear the current waveform? Enter [Y] to confirm, or press any other key to return to menu without clearing.&quot;</span>) {
+                    waveform.clear();
+                    wave_history.clear();
+                    <span class="macro">println!</span>(<span class="string">&quot;Waveform cleared.&quot;</span>);
+                };
+            },
 
 
-            <span class="comment">// TODO 1 Allow user to save waveform to .TXT file
-            </span><span class="number">5 </span>=&gt; <span class="macro">println!</span>(<span class="string">&quot;Export waveform.&quot;</span>),
+            <span class="number">5 </span>=&gt; {
+                <span class="kw">let </span>waveform_string: String = waveform.iter().map(|x| x.to_string()).collect::&lt;Vec&lt;String&gt;&gt;().join(<span class="string">&quot;\n&quot;</span>);
+                <span class="kw">let </span>wave_history_string: String = wave_history.join(<span class="string">&quot;\n&quot;</span>);
+                <span class="kw">match </span>fs::write(<span class="string">&quot;waveform.txt&quot;</span>, waveform_string) {
+                    <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; <span class="macro">println!</span>(<span class="string">&quot;Waveform saved.&quot;</span>),
+                    <span class="prelude-val">Err</span>(error) =&gt; {
+                        <span class="macro">println!</span>(<span class="string">&quot;error: {}&quot;</span>, error);
+                        <span class="macro">println!</span>(<span class="string">&quot;Waveform was not saved.&quot;</span>);
+                    }
+                };
+                <span class="kw">match </span>fs::write(<span class="string">&quot;wave_history.txt&quot;</span>, wave_history_string) {
+                    <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; <span class="macro">println!</span>(<span class="string">&quot;Waveform history saved.&quot;</span>),
+                    <span class="prelude-val">Err</span>(error) =&gt; {
+                        <span class="macro">println!</span>(<span class="string">&quot;error: {}&quot;</span>, error);
+                        <span class="macro">println!</span>(<span class="string">&quot;Waveform history was not saved&quot;</span>);
+                    }
+                };
+
+                <span class="kw">if </span>confirm(<span class="string">&quot;Do you want to clear the current waveform? Enter [Y] to confirm, or press any other key to return to menu without clearing.&quot;</span>) {
+                    waveform.clear();
+                    wave_history.clear();
+                    <span class="macro">println!</span>(<span class="string">&quot;Waveform cleared.&quot;</span>);
+                };
+            },
 
 
-            <span class="comment">// TODO Allow user to edit presets.
-            </span><span class="number">6 </span>=&gt; <span class="macro">println!</span>(<span class="string">&quot;Edit presets.&quot;</span>),
+            <span class="comment">// TODO 7 Allow user to edit presets.
+            </span><span class="number">6 </span>=&gt; <span class="macro">println!</span>(<span class="string">&quot;Edit presets (WiP).&quot;</span>),
 
 
-            <span class="comment">// TODO 6 Query user to save new sampling rate
+            <span class="comment">// TODO 5 Query user to save new sampling rate
             </span><span class="number">7 </span>=&gt; {
                 <span class="macro">println!</span>(<span class="string">&quot;Please enter new sampling rate.&quot;</span>);
-                sample_rate_hz = get_user_num(<span class="string">&quot;Please enter a positive number.&quot;</span>)
+                sample_rate_hz = get_user_num(<span class="string">&quot;Please enter a positive number.&quot;</span>);
             },
 
 
             <span class="number">8 </span>=&gt; <span class="kw">if </span>confirm(<span class="string">&quot;Are you sure you want to exit the program? Enter [Y] to confirm, or press any other key to return to menu.&quot;</span>) {
                 <span class="macro">println!</span>(<span class="string">&quot;Exiting...&quot;</span>);
-                <span class="kw">break
-            </span>} <span class="kw">else </span>{<span class="kw">continue</span>},
+                <span class="kw">break</span>;
+            },
 
 
             <span class="kw">_ </span>=&gt; ()
@@ -470,7 +614,7 @@ See LICENSE.txt for details.
         <span class="kw">let </span>input: u8 = get_user_num(input_prompt);
 
         <span class="kw">if </span>input &gt; <span class="number">0 </span>&amp;&amp; input &lt; <span class="number">9 </span>{
-            <span class="kw">return </span>input
+            <span class="kw">return </span>input;
         } <span class="kw">else </span>{
             <span class="macro">println!</span>(<span class="string">&quot;error: number outside valid range&quot;</span>);
             <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, input_prompt);
@@ -479,7 +623,7 @@ See LICENSE.txt for details.
     };
 }
 
-<span class="doccomment">/// User menu for editing the current waveform.
+<span class="doccomment">/// User menu for manually editing the waveform.
 </span><span class="kw">fn </span>edit_waveform(wave_history_pre: Vec&lt;String&gt;, waveform_pre: Vec&lt;f64&gt;, pulse_shape: Vec&lt;f64&gt;, sample_rate_hz: f64) -&gt; (Vec&lt;f64&gt;, Vec&lt;String&gt;) {
     <span class="kw">let </span>input_prompt: <span class="kw-2">&amp;</span>str = <span class="string">&quot;Please enter a positive number.&quot;</span>;
     <span class="kw">let </span>(pulse_frequency_hz, duration_sec, filler): (f64, f64, f64) = <span class="kw">loop </span>{
@@ -494,10 +638,10 @@ See LICENSE.txt for details.
         <span class="macro">println!</span>(<span class="string">&quot;Duration: {} s&quot;</span>, duration_sec_temp);
         <span class="macro">println!</span>(<span class="string">&quot;Filler: {}&quot;</span>, filler_temp);
         <span class="kw">if </span>confirm(<span class="string">&quot;Are these parameters correct? Enter [Y] to confirm, or press any other key to re-enter them.&quot;</span>) {
-            <span class="kw">break </span>(pulse_frequency_hz_temp, duration_sec_temp, filler_temp)
+            <span class="kw">break </span>(pulse_frequency_hz_temp, duration_sec_temp, filler_temp);
         } <span class="kw">else </span>{
-            <span class="kw">continue
-        </span>};
+            <span class="kw">continue</span>;
+        };
     };
 
     <span class="kw">let </span>waveform_new: Vec&lt;f64&gt; = wave_gen(waveform_pre, pulse_shape, sample_rate_hz, pulse_frequency_hz, duration_sec, filler);
@@ -546,10 +690,10 @@ See LICENSE.txt for details.
     input = input.trim().to_lowercase();
 
     <span class="kw">if </span>input == <span class="string">&quot;y&quot; </span>|| input == <span class="string">&quot;yes&quot; </span>{
-        <span class="kw">return </span><span class="bool-val">true
-    </span>} <span class="kw">else </span>{
-        <span class="kw">return </span><span class="bool-val">false
-    </span>};
+        <span class="kw">return </span><span class="bool-val">true</span>;
+    } <span class="kw">else </span>{
+        <span class="kw">return </span><span class="bool-val">false</span>;
+    };
 }
 
 
