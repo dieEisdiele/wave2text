@@ -3,6 +3,6 @@
     "sample_rate_hz": 100000.0,
     "phase_duration_presets": [
         [20, 5],
-        [1, 10]
+        [0, 10]
     ]
 }
