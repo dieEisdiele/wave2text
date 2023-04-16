@@ -36,10 +36,11 @@ See LICENSE.txt for details.
             // TODO 6 Move settings display after match statement
             // TODO 7 Enable proper preset display
             println!(r#"
-    Pulse shape file: "/pulse.txt"
+    Pulse shape file: /pulse.txt
     Sampling rate:    100000 Hz
-    Filler:           0.0
-    No presets"#);
+    Filler:           0
+    No presets
+"#);
             default
         }
     };
