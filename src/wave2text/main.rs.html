@@ -276,8 +276,26 @@
 <span id="276">276</span>
 <span id="277">277</span>
 <span id="278">278</span>
+<span id="279">279</span>
+<span id="280">280</span>
+<span id="281">281</span>
+<span id="282">282</span>
+<span id="283">283</span>
+<span id="284">284</span>
+<span id="285">285</span>
+<span id="286">286</span>
+<span id="287">287</span>
+<span id="288">288</span>
+<span id="289">289</span>
+<span id="290">290</span>
+<span id="291">291</span>
+<span id="292">292</span>
+<span id="293">293</span>
+<span id="294">294</span>
+<span id="295">295</span>
 </pre><pre class="rust"><code><span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>std::error::Error;
+<span class="kw">use </span>std::any;
 <span class="kw">use </span>std::fs;
 <span class="kw">use </span>std::io;
 
@@ -285,19 +303,18 @@
 <span class="kw">fn </span>main() {
     <span class="comment">// Splash screen
     </span><span class="kw">let </span>notice: <span class="kw-2">&amp;</span>str = <span class="string">r#&quot;wave2text  Copyright (C) 2022  Tom Su
-    This program comes with ABSOLUTELY NO WARRANTY.
-    This is free software, and you are welcome to redistribute it under certain
-    conditions.
-    See LICENSE.txt for details.
+This program comes with ABSOLUTELY NO WARRANTY.
+This is free software, and you are welcome to redistribute it under certain
+conditions.
+See LICENSE.txt for details.
     
-    &quot;#</span>;
+&quot;#</span>;
     <span class="kw">let </span>logo: <span class="kw-2">&amp;</span>str = <span class="string">r#&quot;
-       _          _   ___       _____   _____
-      / \        / | |   |    _|     | |     \
-    -&#39;   \  /\  /  |_|   |   |       | |      `-
-          \/  \/         |___|       |_|
-    
-    &quot;#</span>;
+   _          _   ___       _____   _____
+  / \        / | |   |    _|     | |     \
+-&#39;   \  /\  /  |_|   |   |       | |      `-
+      \/  \/         |___|       |_|
+&quot;#</span>;
     <span class="macro">println!</span>(<span class="string">&quot;{}{}&quot;</span>, notice, logo);
 
     <span class="comment">// Load settings from JSON file and get the pulse shape
@@ -309,55 +326,111 @@
             <span class="kw">let </span>default = Settings {
                 pulse_path: String::from(<span class="string">&quot;pulse.txt&quot;</span>),
                 sample_rate_hz: <span class="number">100000.0</span>,
+                filler: <span class="number">0.0</span>,
                 phase_duration_presets: Vec::new()
             };
+            <span class="comment">// TODO Move settings display after match statement
+            // TODO Enable proper preset display
+            </span><span class="macro">println!</span>(<span class="string">r#&quot;
+    Pulse shape file: &quot;/pulse.txt&quot;
+    Sampling rate:    100000 Hz
+    Filler:           0.0
+    No presets&quot;#</span>);
             default
-        },
+        }
     };
     <span class="kw">let </span><span class="kw-2">mut </span>sample_rate_hz: f64 = settings.sample_rate_hz;
+    <span class="kw">let </span><span class="kw-2">mut </span>filler: f64 = settings.filler;
     <span class="kw">let </span>pulse: Vec&lt;f64&gt; = <span class="kw">match </span>get_pulse_shape(<span class="kw-2">&amp;</span>settings.pulse_path) {
         <span class="prelude-val">Ok</span>(vec) =&gt; vec,
-        <span class="prelude-val">Err</span>(error) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;error loading pulse shape from file: {}&quot;</span>, error),
+        <span class="prelude-val">Err</span>(error) =&gt; {
+            <span class="macro">println!</span>(<span class="string">&quot;error loading pulse shape from file: {}&quot;</span>, error);
+            <span class="macro">println!</span>(<span class="string">&quot;Loading default pulse shape...&quot;</span>);
+            Vec::from([-<span class="number">1.0</span>, -<span class="number">1.0</span>, -<span class="number">1.0</span>, -<span class="number">1.0</span>, -<span class="number">1.0</span>, -<span class="number">1.0</span>, -<span class="number">1.0</span>, -<span class="number">1.0</span>, -<span class="number">1.0</span>, -<span class="number">1.0</span>, -<span class="number">1.0</span>, -<span class="number">1.0</span>, -<span class="number">1.0</span>, -<span class="number">1.0</span>, -<span class="number">1.0</span>, -<span class="number">1.0</span>, -<span class="number">1.0</span>, -<span class="number">1.0</span>, -<span class="number">1.0</span>, -<span class="number">1.0</span>, <span class="number">1.0</span>, <span class="number">1.0</span>, <span class="number">1.0</span>, <span class="number">1.0</span>, <span class="number">1.0</span>, <span class="number">1.0</span>, <span class="number">1.0</span>, <span class="number">1.0</span>, <span class="number">1.0</span>, <span class="number">1.0</span>, <span class="number">1.0</span>, <span class="number">1.0</span>, <span class="number">1.0</span>, <span class="number">1.0</span>, <span class="number">1.0</span>, <span class="number">1.0</span>, <span class="number">1.0</span>, <span class="number">1.0</span>, <span class="number">1.0</span>, <span class="number">1.0</span>])
+        }
     };
 
     <span class="comment">// Define vectors to store waveform in
     </span><span class="kw">let </span><span class="kw-2">mut </span>waveform: Vec&lt;f64&gt; = Vec::new();
     <span class="kw">let </span><span class="kw-2">mut </span>wave_history: Vec&lt;String&gt; = Vec::new();
 
+
     <span class="comment">// Main program loop
     </span><span class="kw">loop </span>{
         <span class="kw">match </span>terminal_menu() {
-            <span class="number">1 </span>=&gt; {
-                <span class="kw">loop </span>{
-                    <span class="macro">println!</span>(<span class="string">&quot;\nSampling rate (Hz): {}&quot;</span>, sample_rate_hz);
-                    <span class="kw">if </span>confirm(<span class="string">&quot;Is this correct? Enter [Y] to confirm, or press any other button to enter a different sampling rate.&quot;</span>) {
-                        <span class="kw">break
-                    </span>} <span class="kw">else </span>{
-                        <span class="comment">// TODO Query user to enter new sample rate
-                        // TODO Query user if the new sample rate should be saved as default
-                        </span><span class="kw">continue
-                    </span>};
-                }
-                <span class="kw">let </span>pulse_temp = pulse.to_vec();
-                (waveform, wave_history) = edit_waveform(wave_history, waveform, pulse_temp, sample_rate_hz);
+            <span class="comment">// TODO 2 Add special case for 0Hz (don&#39;t insert any pulses)
+            // TODO 3 Add checks that inputs are valid (i.e. floats that must be positive are positive)
+            // TODO 4 Allow user to use presets
+            // TODO 5 Allow user to save presets
+            </span><span class="number">1 </span>=&gt; {
+                <span class="kw">let </span>pulse_temp: Vec&lt;f64&gt; = pulse.to_vec();
+                (waveform, wave_history) = edit_waveform(wave_history, waveform, pulse_temp, sample_rate_hz, filler);
             },
+
+
             <span class="number">2 </span>=&gt; {
-                <span class="kw">let </span>wave_history_temp = wave_history.to_vec();
-                <span class="kw">for </span>item <span class="kw">in </span>wave_history_temp {
-                <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, item)
-                }
+                <span class="kw">let </span>wave_history_temp: Vec&lt;String&gt; = wave_history.to_vec();
+                <span class="kw">if </span>wave_history_temp.len() == <span class="number">0 </span>{
+                    <span class="macro">println!</span>(<span class="string">&quot;Waveform is empty. Returning to menu...&quot;</span>);
+                } <span class="kw">else </span>{
+                    <span class="kw">for </span>item <span class="kw">in </span>wave_history_temp {
+                    <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, item);
+                    };
+
+                    <span class="macro">println!</span>(<span class="string">&quot;\nPress any key to return to menu.&quot;</span>);
+                    <span class="kw">let </span><span class="kw-2">mut </span>input = String::new();
+                    <span class="kw">match </span>io::stdin().read_line(<span class="kw-2">&amp;mut </span>input) {
+                        <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; (),
+                        <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; ()
+                    };
+                };
             },
-            <span class="number">3 </span>=&gt; <span class="kw">if </span>confirm(<span class="string">&quot;Are you sure you want to clear the current waveform? Enter [Y] to confirm, or press any other button to return to the menu.&quot;</span>) {
+
+
+            <span class="number">3 </span>=&gt; <span class="kw">if </span>confirm(<span class="string">&quot;Are you sure you want to clear the current waveform? Enter [Y] to confirm, or press any other key to return to menu.&quot;</span>) {
                 waveform.clear();
                 wave_history.clear();
                 <span class="macro">println!</span>(<span class="string">&quot;Waveform cleared.&quot;</span>);
             } <span class="kw">else </span>{<span class="kw">continue</span>},
-            <span class="number">4 </span>=&gt; <span class="macro">println!</span>(<span class="string">&quot;Export waveform.&quot;</span>),
-            <span class="number">5 </span>=&gt; <span class="kw">if </span>confirm(<span class="string">&quot;Are you sure you want to exit the program? Enter [Y] to confirm, or press any other button to return to the menu.&quot;</span>) {
+
+
+            <span class="comment">// TODO 1 Allow user to save waveform to .TXT file
+            </span><span class="number">4 </span>=&gt; <span class="macro">println!</span>(<span class="string">&quot;Export waveform.&quot;</span>),
+
+
+            <span class="comment">// TODO 6 Query user to save new settings
+            </span><span class="number">5 </span>=&gt; {
+                <span class="kw">let </span>input_prompt: <span class="kw-2">&amp;</span>str = <span class="string">&quot;Please enter a positive number.&quot;</span>;
+
+                sample_rate_hz = <span class="kw">loop </span>{
+                    <span class="macro">println!</span>(<span class="string">&quot;\nSampling rate (Hz): {}&quot;</span>, sample_rate_hz);
+                    <span class="kw">if </span>confirm(<span class="string">&quot;Is this correct? Enter [Y] to confirm, or press any other key to enter a different sampling rate.&quot;</span>) {
+                        <span class="kw">break </span>sample_rate_hz
+                    } <span class="kw">else </span>{
+                        <span class="macro">println!</span>(<span class="string">&quot;Please enter new sampling rate.&quot;</span>);
+                        <span class="kw">break </span>get_user_num(input_prompt)
+                    };
+                };
+
+                filler = <span class="kw">loop </span>{
+                    <span class="macro">println!</span>(<span class="string">&quot;\nFiller value: {}&quot;</span>, filler);
+                    <span class="kw">if </span>confirm(<span class="string">&quot;Is this correct? Enter [Y] to confirm, or press any other key to enter a different filler.&quot;</span>) {
+                        <span class="kw">break </span>filler
+                    } <span class="kw">else </span>{
+                        <span class="macro">println!</span>(<span class="string">&quot;Please enter new filler.&quot;</span>);
+                        <span class="kw">break </span>get_user_num(input_prompt)
+                    };
+                };
+            },
+
+
+            <span class="number">6 </span>=&gt; <span class="kw">if </span>confirm(<span class="string">&quot;Are you sure you want to exit the program? Enter [Y] to confirm, or press any other key to return to menu.&quot;</span>) {
                 <span class="macro">println!</span>(<span class="string">&quot;Exiting...&quot;</span>);
                 <span class="kw">break
             </span>} <span class="kw">else </span>{<span class="kw">continue</span>},
-            <span class="kw">_ </span>=&gt; (),
+
+
+            <span class="kw">_ </span>=&gt; ()
         };
     };
 }
@@ -367,7 +440,6 @@
 </span><span class="kw">fn </span>get_settings(file_path: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;Settings, Box&lt;<span class="kw">dyn </span>Error&gt;&gt; {
     <span class="kw">let </span>ini_data: String = fs::read_to_string(file_path)<span class="question-mark">?</span>;
     <span class="kw">let </span>settings: Settings = serde_json::from_str(<span class="kw-2">&amp;</span>ini_data)<span class="question-mark">?</span>;
-
     <span class="prelude-val">Ok</span>(settings)
 }
 
@@ -382,133 +454,94 @@
     <span class="prelude-val">Ok</span>(pulse_shape)
 }
 
-<span class="doccomment">/// Brings up the menu and returns the input if valid.
-</span><span class="kw">fn </span>terminal_menu() -&gt; u8 {
-    <span class="comment">// Define strings for showing user options and how to call them.
-    </span><span class="kw">let </span>menu: <span class="kw-2">&amp;</span>str = <span class="string">r#&quot;
-What would you like to do?
-    
-    [1]. Edit waveform.
-    [2]. View waveform history.
-    [3]. Clear waveform.
-    [4]. Export waveform.
-    [5]. Exit program.
-    &quot;#</span>;
-    <span class="kw">let </span>input_prompt: <span class="kw-2">&amp;</span>str = <span class="string">&quot;Please enter a number 1-4.&quot;</span>;
-
-    <span class="comment">// Print menu and get user input
-    </span><span class="macro">println!</span>(<span class="string">&quot;{}\n{}&quot;</span>, menu, input_prompt);
+<span class="doccomment">/// Gets user input and returns a number if valid
+</span><span class="kw">fn </span>get_user_num&lt;T: std::str::FromStr&gt;(prompt: <span class="kw-2">&amp;</span>str) -&gt; T {
     <span class="kw">loop </span>{
         <span class="kw">let </span><span class="kw-2">mut </span>input = String::new();
         <span class="kw">match </span>io::stdin().read_line(<span class="kw-2">&amp;mut </span>input) {
             <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; (),
             <span class="prelude-val">Err</span>(error) =&gt; {
                 <span class="macro">println!</span>(<span class="string">&quot;error: {}&quot;</span>, error);
-                <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, input_prompt);
+                <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, prompt);
                 <span class="kw">continue</span>;
-            },
-        }
-
-        <span class="kw">match </span>input.trim().parse::&lt;u8&gt;() {
-            <span class="prelude-val">Ok</span>(num) =&gt; <span class="kw">if </span>num &gt; <span class="number">0 </span>&amp;&amp; num &lt; <span class="number">6 </span>{
-                <span class="kw">return </span>num
-            } <span class="kw">else </span>{
-                    <span class="macro">println!</span>(<span class="string">&quot;error: number outside valid range&quot;</span>);
-                    <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, input_prompt);
-                    <span class="kw">continue</span>;
-            },
-            <span class="prelude-val">Err</span>(error) =&gt; {
-                <span class="macro">println!</span>(<span class="string">&quot;error: {}&quot;</span>, error);
-                <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, input_prompt);
-                <span class="kw">continue</span>;
-            },
+            }
         };
-    }
+
+        <span class="kw">match </span>input.trim().parse::&lt;T&gt;() {
+            <span class="prelude-val">Ok</span>(num) =&gt; <span class="kw">return </span>num,
+            <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; {
+                <span class="macro">println!</span>(<span class="string">&quot;error: input cannot be parsed as {}&quot;</span>, any::type_name::&lt;T&gt;());
+                <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, prompt);
+                <span class="kw">continue</span>;
+            }
+        };
+    };
+}
+
+<span class="doccomment">/// Brings up the menu and returns the input if valid.
+</span><span class="kw">fn </span>terminal_menu() -&gt; u8 {
+    <span class="comment">// Define strings for showing user options and how to call them.
+    </span><span class="kw">let </span>menu: <span class="kw-2">&amp;</span>str = <span class="string">r#&quot;
+
+What would you like to do?
+    
+    [1]. Edit waveform.
+    [2]. View waveform history.
+    [3]. Clear waveform.
+    [4]. Export waveform.
+    [5]. View/edit settings.
+    [6]. Exit program.
+    &quot;#</span>;
+    <span class="kw">let </span>input_prompt: <span class="kw-2">&amp;</span>str = <span class="string">&quot;Please enter a number 1-6.&quot;</span>;
+
+    <span class="comment">// Print menu and get user input
+    </span><span class="macro">println!</span>(<span class="string">&quot;{}\n{}&quot;</span>, menu, input_prompt);
+    <span class="kw">loop </span>{
+        <span class="kw">let </span>input: u8 = get_user_num(input_prompt);
+
+        <span class="kw">if </span>input &gt; <span class="number">0 </span>&amp;&amp; input &lt; <span class="number">7 </span>{
+            <span class="kw">return </span>input
+        } <span class="kw">else </span>{
+            <span class="macro">println!</span>(<span class="string">&quot;error: number outside valid range&quot;</span>);
+            <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, input_prompt);
+            <span class="kw">continue</span>;
+        };
+    };
 }
 
 <span class="doccomment">/// User menu for editing the current waveform.
-</span><span class="kw">fn </span>edit_waveform(wave_history_pre: Vec&lt;String&gt;, waveform_pre: Vec&lt;f64&gt;, pulse_shape: Vec&lt;f64&gt;, sample_rate_hz: f64) -&gt; (Vec&lt;f64&gt;, Vec&lt;String&gt;) {
+</span><span class="kw">fn </span>edit_waveform(wave_history_pre: Vec&lt;String&gt;, waveform_pre: Vec&lt;f64&gt;, pulse_shape: Vec&lt;f64&gt;, sample_rate_hz: f64, filler: f64) -&gt; (Vec&lt;f64&gt;, Vec&lt;String&gt;) {
+    <span class="kw">let </span>input_prompt: <span class="kw-2">&amp;</span>str = <span class="string">&quot;Please enter a positive number.&quot;</span>;
     <span class="kw">let </span>(pulse_frequency_hz, duration_sec): (f64, f64) = <span class="kw">loop </span>{
-        <span class="kw">let </span>(pulse_frequency_hz_temp, duration_sec_temp): (f64, f64) = get_wave_variables();
+        <span class="macro">println!</span>(<span class="string">&quot;\nPulse phase (Hz)&quot;</span>);
+        <span class="kw">let </span>pulse_frequency_hz_temp: f64 = get_user_num(input_prompt);
+        <span class="macro">println!</span>(<span class="string">&quot;Duration (s)&quot;</span>);
+        <span class="kw">let </span>duration_sec_temp: f64 = get_user_num(input_prompt);
+
         <span class="macro">println!</span>(<span class="string">&quot;\nPulse frequency: {} Hz&quot;</span>, pulse_frequency_hz_temp);
         <span class="macro">println!</span>(<span class="string">&quot;Duration: {} s&quot;</span>, duration_sec_temp);
-        <span class="kw">if </span>confirm(<span class="string">&quot;Are these parameters correct? Enter [Y] to confirm, or press any other button to re-enter them.&quot;</span>) {
+        <span class="kw">if </span>confirm(<span class="string">&quot;Are these parameters correct? Enter [Y] to confirm, or press any other key to re-enter them.&quot;</span>) {
             <span class="kw">break </span>(pulse_frequency_hz_temp, duration_sec_temp)
         } <span class="kw">else </span>{
             <span class="kw">continue
-        </span>}
+        </span>};
     };
 
-    <span class="kw">let </span>waveform_new: Vec&lt;f64&gt; = wave_gen(waveform_pre, pulse_shape, sample_rate_hz, pulse_frequency_hz, duration_sec);
+    <span class="kw">let </span>waveform_new: Vec&lt;f64&gt; = wave_gen(waveform_pre, pulse_shape, sample_rate_hz, filler, pulse_frequency_hz, duration_sec);
 
     <span class="kw">let </span><span class="kw-2">mut </span>wave_history: Vec&lt;String&gt; = Vec::from(wave_history_pre);
     <span class="kw">let </span>wave_history_new: String = <span class="macro">format!</span>(<span class="string">&quot;
     Sampling rate:   {} Hz
     Pulse frequency: {} Hz
-    Duration:        {} s&quot;</span>, sample_rate_hz, pulse_frequency_hz, duration_sec);
+    Duration:        {} s
+    Filler:          {}&quot;</span>, sample_rate_hz, pulse_frequency_hz, duration_sec, filler);
     wave_history.push(wave_history_new);
 
-    <span class="kw">return </span>(waveform_new, wave_history)
-}
-
-<span class="doccomment">/// Get user-defined variables
-</span><span class="kw">fn </span>get_wave_variables() -&gt; (f64, f64) {
-    <span class="kw">let </span>input_prompt: <span class="kw-2">&amp;</span>str = <span class="string">&quot;Please enter a positive number.&quot;</span>;
-
-    <span class="kw">let </span><span class="kw-2">mut </span>pulse_frequency_hz = String::new();
-    <span class="kw">let </span><span class="kw-2">mut </span>duration_sec = String::new();
-
-    <span class="macro">println!</span>(<span class="string">&quot;\nPulse phase (Hz)&quot;</span>);
-    <span class="kw">let </span>pulse_frequency_hz: f64 = <span class="kw">loop </span>{
-        <span class="kw">match </span>io::stdin().read_line(<span class="kw-2">&amp;mut </span>pulse_frequency_hz) {
-            <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; (),
-            <span class="prelude-val">Err</span>(error) =&gt; {
-                <span class="macro">println!</span>(<span class="string">&quot;error: {}&quot;</span>, error);
-                <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, input_prompt);
-                pulse_frequency_hz.clear();
-                <span class="kw">continue</span>;
-            },
-        }
-
-        <span class="kw">match </span>pulse_frequency_hz.trim().parse::&lt;f64&gt;() {
-            <span class="prelude-val">Ok</span>(num) =&gt; <span class="kw">break </span>num,
-            <span class="prelude-val">Err</span>(error) =&gt; {
-                <span class="macro">println!</span>(<span class="string">&quot;error: {}&quot;</span>, error);
-                <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, input_prompt);
-                pulse_frequency_hz.clear();
-                <span class="kw">continue</span>;
-            },
-        };
-    };
-
-    <span class="macro">println!</span>(<span class="string">&quot;Duration (s)&quot;</span>);
-    <span class="kw">let </span>duration_sec: f64 = <span class="kw">loop </span>{
-        <span class="kw">match </span>io::stdin().read_line(<span class="kw-2">&amp;mut </span>duration_sec) {
-            <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; (),
-            <span class="prelude-val">Err</span>(error) =&gt; {
-                <span class="macro">println!</span>(<span class="string">&quot;error: {}&quot;</span>, error);
-                <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, input_prompt);
-                duration_sec.clear();
-                <span class="kw">continue</span>;
-            },
-        }
-
-        <span class="kw">match </span>duration_sec.trim().parse::&lt;f64&gt;() {
-            <span class="prelude-val">Ok</span>(num) =&gt; <span class="kw">break </span>num,
-            <span class="prelude-val">Err</span>(error) =&gt; {
-                <span class="macro">println!</span>(<span class="string">&quot;error: {}&quot;</span>, error);
-                <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, input_prompt);
-                duration_sec.clear();
-                <span class="kw">continue</span>;
-            },
-        };
-    };
-
-    <span class="kw">return </span>(pulse_frequency_hz, duration_sec)
+    (waveform_new, wave_history)
 }
 
 <span class="doccomment">/// Constructs a new waveform in which the provided pulse repeats as specified, and appends it to the end of the existing waveform.
-</span><span class="kw">fn </span>wave_gen(waveform_pre: Vec&lt;f64&gt;, pulse_shape: Vec&lt;f64&gt;, sample_rate_hz: f64, pulse_frequency_hz: f64, duration_sec: f64) -&gt; Vec&lt;f64&gt; {
+</span><span class="kw">fn </span>wave_gen(waveform_pre: Vec&lt;f64&gt;, pulse_shape: Vec&lt;f64&gt;, sample_rate_hz: f64, filler: f64, pulse_frequency_hz: f64, duration_sec: f64) -&gt; Vec&lt;f64&gt; {
     <span class="kw">let </span><span class="kw-2">mut </span>waveform: Vec&lt;f64&gt; = Vec::from(waveform_pre);
 
     <span class="kw">let </span>period_sec: f64 = <span class="number">1.0</span>/pulse_frequency_hz;
@@ -520,9 +553,9 @@ What would you like to do?
         waveform_new.extend(<span class="kw-2">&amp;</span>pulse_shape);
 
         <span class="kw">let </span>wave_len_target = f64::min(wave_len_final, (period_sec * sample_rate_hz * (pulse_count <span class="kw">as </span>f64 + <span class="number">1.0</span>)).round()) <span class="kw">as </span>usize;
-        <span class="kw">let </span>zeros: Vec&lt;f64&gt; = <span class="macro">vec!</span>[<span class="number">0.0</span>; wave_len_target - waveform_new.len()];
-        waveform_new.extend(zeros)
-    }
+        <span class="kw">let </span>fill: Vec&lt;f64&gt; = <span class="macro">vec!</span>[filler; wave_len_target - waveform_new.len()];
+        waveform_new.extend(fill)
+    };
 
     waveform.extend(waveform_new);
     waveform
@@ -536,14 +569,14 @@ What would you like to do?
     <span class="kw">match </span>io::stdin().read_line(<span class="kw-2">&amp;mut </span>input) {
         <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; (),
         <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="kw">return </span><span class="bool-val">false
-        </span>}
+        </span>};
     input = input.trim().to_lowercase();
 
     <span class="kw">if </span>input == <span class="string">&quot;y&quot; </span>|| input == <span class="string">&quot;yes&quot; </span>{
         <span class="kw">return </span><span class="bool-val">true
     </span>} <span class="kw">else </span>{
         <span class="kw">return </span><span class="bool-val">false
-    </span>}
+    </span>};
 }
 
 
@@ -552,6 +585,7 @@ What would you like to do?
 </span><span class="kw">struct </span>Settings {
     pulse_path: String,
     sample_rate_hz: f64,
+    filler: f64,
     phase_duration_presets: Vec&lt;(f64, f64)&gt;,
 }
 </code></pre></div>
