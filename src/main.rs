@@ -147,16 +147,30 @@ See LICENSE.txt for details.
 
 
             5 => {
+                let mut save_name = String::new();
+                println!("Please enter a file name for the current waveform.");
+                loop {
+                    match io::stdin().read_line(&mut save_name) {
+                        Ok(_) => break,
+                        Err(error) => {
+                            println!("error: {}", error);
+                            println!("Please enter a valid UTF-8 string.");
+                            continue;
+                        }
+                    };
+                };
+
                 let waveform_string: String = waveform.iter().map(|x| x.to_string()).collect::<Vec<String>>().join("\n");
                 let wave_history_string: String = wave_history.join("\n");
-                match fs::write("waveform.txt", waveform_string) {
+                let save_name: &str = save_name.trim();
+                match fs::write(format!("saved/{}.txt", save_name), waveform_string) {
                     Ok(_) => println!("Waveform saved."),
                     Err(error) => {
                         println!("error: {}", error);
                         println!("Waveform was not saved.");
                     }
                 };
-                match fs::write("wave_history.txt", wave_history_string) {
+                match fs::write(format!("saved/{}_history.txt", save_name), wave_history_string) {
                     Ok(_) => println!("Waveform history saved."),
                     Err(error) => {
                         println!("error: {}", error);
@@ -234,6 +248,24 @@ fn get_user_num<T: std::str::FromStr>(prompt: &str) -> T {
                 continue;
             }
         };
+    };
+}
+
+/// Prompts user to confirm action before proceeding.
+fn confirm(query: &str) -> bool {
+    println!("{}", query);
+
+    let mut input = String::new();
+    match io::stdin().read_line(&mut input) {
+        Ok(_) => (),
+        Err(_) => return false
+        };
+    input = input.trim().to_lowercase();
+
+    if input == "y" || input == "yes" {
+        return true;
+    } else {
+        return false;
     };
 }
 
@@ -320,24 +352,6 @@ fn wave_gen(waveform_pre: Vec<f64>, pulse_shape: Vec<f64>, sample_rate_hz: f64, 
     wave_history.push(wave_history_new);
 
     (waveform, wave_history)
-}
-
-/// Prompts user to confirm action before proceeding.
-fn confirm(query: &str) -> bool {
-    println!("{}", query);
-
-    let mut input = String::new();
-    match io::stdin().read_line(&mut input) {
-        Ok(_) => (),
-        Err(_) => return false
-        };
-    input = input.trim().to_lowercase();
-
-    if input == "y" || input == "yes" {
-        return true;
-    } else {
-        return false;
-    };
 }
 
 
