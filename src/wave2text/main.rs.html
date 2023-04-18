@@ -348,6 +348,20 @@
 <span id="348">348</span>
 <span id="349">349</span>
 <span id="350">350</span>
+<span id="351">351</span>
+<span id="352">352</span>
+<span id="353">353</span>
+<span id="354">354</span>
+<span id="355">355</span>
+<span id="356">356</span>
+<span id="357">357</span>
+<span id="358">358</span>
+<span id="359">359</span>
+<span id="360">360</span>
+<span id="361">361</span>
+<span id="362">362</span>
+<span id="363">363</span>
+<span id="364">364</span>
 </pre><pre class="rust"><code><span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>std::error::Error;
 <span class="kw">use </span>std::any;
@@ -497,16 +511,30 @@ See LICENSE.txt for details.
 
 
             <span class="number">5 </span>=&gt; {
+                <span class="kw">let </span><span class="kw-2">mut </span>save_name = String::new();
+                <span class="macro">println!</span>(<span class="string">&quot;Please enter a file name for the current waveform.&quot;</span>);
+                <span class="kw">loop </span>{
+                    <span class="kw">match </span>io::stdin().read_line(<span class="kw-2">&amp;mut </span>save_name) {
+                        <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; <span class="kw">break</span>,
+                        <span class="prelude-val">Err</span>(error) =&gt; {
+                            <span class="macro">println!</span>(<span class="string">&quot;error: {}&quot;</span>, error);
+                            <span class="macro">println!</span>(<span class="string">&quot;Please enter a valid UTF-8 string.&quot;</span>);
+                            <span class="kw">continue</span>;
+                        }
+                    };
+                };
+
                 <span class="kw">let </span>waveform_string: String = waveform.iter().map(|x| x.to_string()).collect::&lt;Vec&lt;String&gt;&gt;().join(<span class="string">&quot;\n&quot;</span>);
                 <span class="kw">let </span>wave_history_string: String = wave_history.join(<span class="string">&quot;\n&quot;</span>);
-                <span class="kw">match </span>fs::write(<span class="string">&quot;waveform.txt&quot;</span>, waveform_string) {
+                <span class="kw">let </span>save_name: <span class="kw-2">&amp;</span>str = save_name.trim();
+                <span class="kw">match </span>fs::write(<span class="macro">format!</span>(<span class="string">&quot;saved/{}.txt&quot;</span>, save_name), waveform_string) {
                     <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; <span class="macro">println!</span>(<span class="string">&quot;Waveform saved.&quot;</span>),
                     <span class="prelude-val">Err</span>(error) =&gt; {
                         <span class="macro">println!</span>(<span class="string">&quot;error: {}&quot;</span>, error);
                         <span class="macro">println!</span>(<span class="string">&quot;Waveform was not saved.&quot;</span>);
                     }
                 };
-                <span class="kw">match </span>fs::write(<span class="string">&quot;wave_history.txt&quot;</span>, wave_history_string) {
+                <span class="kw">match </span>fs::write(<span class="macro">format!</span>(<span class="string">&quot;saved/{}_history.txt&quot;</span>, save_name), wave_history_string) {
                     <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; <span class="macro">println!</span>(<span class="string">&quot;Waveform history saved.&quot;</span>),
                     <span class="prelude-val">Err</span>(error) =&gt; {
                         <span class="macro">println!</span>(<span class="string">&quot;error: {}&quot;</span>, error);
@@ -584,6 +612,24 @@ See LICENSE.txt for details.
                 <span class="kw">continue</span>;
             }
         };
+    };
+}
+
+<span class="doccomment">/// Prompts user to confirm action before proceeding.
+</span><span class="kw">fn </span>confirm(query: <span class="kw-2">&amp;</span>str) -&gt; bool {
+    <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, query);
+
+    <span class="kw">let </span><span class="kw-2">mut </span>input = String::new();
+    <span class="kw">match </span>io::stdin().read_line(<span class="kw-2">&amp;mut </span>input) {
+        <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; (),
+        <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="kw">return </span><span class="bool-val">false
+        </span>};
+    input = input.trim().to_lowercase();
+
+    <span class="kw">if </span>input == <span class="string">&quot;y&quot; </span>|| input == <span class="string">&quot;yes&quot; </span>{
+        <span class="kw">return </span><span class="bool-val">true</span>;
+    } <span class="kw">else </span>{
+        <span class="kw">return </span><span class="bool-val">false</span>;
     };
 }
 
@@ -670,24 +716,6 @@ See LICENSE.txt for details.
     wave_history.push(wave_history_new);
 
     (waveform, wave_history)
-}
-
-<span class="doccomment">/// Prompts user to confirm action before proceeding.
-</span><span class="kw">fn </span>confirm(query: <span class="kw-2">&amp;</span>str) -&gt; bool {
-    <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, query);
-
-    <span class="kw">let </span><span class="kw-2">mut </span>input = String::new();
-    <span class="kw">match </span>io::stdin().read_line(<span class="kw-2">&amp;mut </span>input) {
-        <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; (),
-        <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="kw">return </span><span class="bool-val">false
-        </span>};
-    input = input.trim().to_lowercase();
-
-    <span class="kw">if </span>input == <span class="string">&quot;y&quot; </span>|| input == <span class="string">&quot;yes&quot; </span>{
-        <span class="kw">return </span><span class="bool-val">true</span>;
-    } <span class="kw">else </span>{
-        <span class="kw">return </span><span class="bool-val">false</span>;
-    };
 }
 
 
