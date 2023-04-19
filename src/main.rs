@@ -6,54 +6,61 @@ use std::io;
 
 
 fn main() {
-    // Splash screen
-    let notice: &str = r#"wave2text  Copyright (C) 2023  Tom Su
+    println!("wave2text  Copyright (C) 2023  Tom Su
 This program comes with ABSOLUTELY NO WARRANTY.
 This is free software, and you are welcome to redistribute it under certain
 conditions.
-See LICENSE.txt for details.
-    
-"#;
-    let logo: &str = r#"
-   _          _   ___       _____   _____
-  / \        / | |   |    _|     | |     \
--'   \  /\  /  |_|   |   |       | |      `-
-      \/  \/         |___|       |_|
-"#;
-    println!("{}{}", notice, logo);
+See LICENSE.txt for details.\n");
 
     // Load settings from JSON file and get the pulse shape
     let settings: Settings = match get_settings("settings.json") {
         Ok(json) => json,
         Err(error) => {
-            println!("\n\nerror loading ini.json: {}", error);
+            println!("error loading ini.json: {}", error);
             println!("Loading default settings...");
             let default = Settings {
                 pulse_path: String::from("pulse.txt"),
                 sample_rate_hz: 100000.0,
                 presets_phase_duration_filler: Vec::new()
             };
-            // TODO 6 Move settings display after match statement
-            // TODO 7 Enable proper preset display
-            println!(r#"
-    Pulse shape file: /pulse.txt
-    Sampling rate:    100000 Hz
-    Filler:           0
-    No presets
-"#);
             default
         }
     };
-    let mut presets: Vec<(f64, f64, f64)> = settings.presets_phase_duration_filler;
-    let mut sample_rate_hz: f64 = settings.sample_rate_hz;
+
     let pulse: Vec<f64> = match get_pulse_shape(&settings.pulse_path) {
-        Ok(vec) => vec,
+        Ok(vec) => {
+            println!("Loaded pulse from {}", settings.pulse_path);
+            vec
+        },
         Err(error) => {
-            println!("error loading pulse shape from file: {}", error);
+            println!("error loading pulse shape from {}: {}", settings.pulse_path, error);
             println!("Loading default pulse shape...");
             Vec::from([-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
         }
     };
+    let mut sample_rate_hz: f64 = settings.sample_rate_hz;
+    println!("Loaded sampling rate: {} Hz", sample_rate_hz);
+    let mut presets: Vec<(f64, f64, f64)> = settings.presets_phase_duration_filler;
+    let presets_loaded_n: usize = presets.len();
+    if presets_loaded_n == 0 {
+        println!("No presets loaded.");
+    } else {
+        println!("Loaded {} presets:", presets_loaded_n);
+        for (n, preset) in presets.iter().enumerate() {
+            println!("
+    {}
+    Pulse frequency: {} Hz
+    Duration:        {} s
+    Filler:          {}", n, preset.0, preset.1, preset.2);
+        };
+    };
+    println!(r#"
+
+    _          _   ___       _____   _____
+   / \        / | |   |    _|     | |     \
+ -'   \  /\  /  |_|   |   |       | |      `-
+       \/  \/         |___|       |_|
+ "#);
 
     // Define vectors to store waveform in
     let mut waveform: Vec<f64> = Vec::new();
@@ -79,7 +86,6 @@ See LICENSE.txt for details.
                     continue;
                 }
 
-                let input_prompt: &str = "Please enter the preset(s) you would like to add.\nYou can specify more than one by inserting a space between each number.";
                 for (n, preset) in presets_temp.iter().enumerate() {
                     println!("
     {}
@@ -87,33 +93,31 @@ See LICENSE.txt for details.
     Duration:        {} s
     Filler:          {}", n, preset.0, preset.1, preset.2);
                 };
-                println!("{}", input_prompt);
                 
-                let preset_selection: Vec<u32> = loop {
+                let input_prompt: &str = "Please enter the preset(s) you would like to add.\nYou can specify more than one by inserting a space between each number.";
+                let preset_selection: Vec<usize> = loop {
                     let mut input = String::new();
+                    println!("{}", input_prompt);
                     match io::stdin().read_line(&mut input) {
                         Ok(_) => (),
                         Err(error) => {
                             println!("error: {}", error);
-                            println!("{}", input_prompt);
                             continue;
                         }
                     };
-
-                    match input.trim().split(" ").map(|x| x.parse::<u32>()).collect() {
+                    match input.trim().split(" ").map(|x| x.parse::<usize>()).collect() {
                         Ok(vec) => break vec,
                         Err(error) => {
                             println!("error: {}", error);
-                            println!("{}", input_prompt);
                             continue;
                         }
                     };
                 };
 
-                for preset_n in preset_selection {
+                for preset_index in preset_selection {
                     let pulse_temp: Vec<f64> = pulse.to_vec();
-                    let preset_add: (f64, f64, f64) = presets_temp[(preset_n) as usize];
-                    let preset_name: String = format!("Preset {}", preset_n);
+                    let preset_add: (f64, f64, f64) = presets_temp[preset_index];
+                    let preset_name: String = format!("Preset {}", preset_index);
                     (waveform, wave_history) = wave_gen(waveform, pulse_temp, sample_rate_hz, preset_add.0, preset_add.1, preset_add.2, wave_history, &preset_name);
                 };
             },
@@ -234,11 +238,11 @@ fn get_pulse_shape(file_path: &str) -> Result<Vec<f64>, Box<dyn Error>> {
 fn get_user_num<T: std::str::FromStr>(prompt: &str) -> T {
     loop {
         let mut input = String::new();
+        println!("{}", prompt);
         match io::stdin().read_line(&mut input) {
             Ok(_) => (),
             Err(error) => {
                 println!("error: {}", error);
-                println!("{}", prompt);
                 continue;
             }
         };
@@ -247,7 +251,6 @@ fn get_user_num<T: std::str::FromStr>(prompt: &str) -> T {
             Ok(num) => return num,
             Err(_) => {
                 println!("error: input cannot be parsed as {}", any::type_name::<T>());
-                println!("{}", prompt);
                 continue;
             }
         };
@@ -274,8 +277,6 @@ fn confirm(query: &str) -> bool {
 
 /// Brings up the menu and returns the input if valid.
 fn terminal_menu(sample_rate_hz: f64) -> u8 {
-    let input_prompt: &str = "Please enter a number 1-8.";
-
     // Print menu and get user input
     println!("\n\nWhat would you like to do?\n
     [1]. Add to waveform manually.
@@ -285,15 +286,14 @@ fn terminal_menu(sample_rate_hz: f64) -> u8 {
     [5]. Export waveform.
     [6]. View/edit presets.
     [7]. Edit sampling rate ({} Hz).
-    [8]. Exit program.\n\n{}", sample_rate_hz, input_prompt);
+    [8]. Exit program.\n\n", sample_rate_hz);
     loop {
-        let input: u8 = get_user_num(input_prompt);
+        let input: u8 = get_user_num("Please enter a number 1-8.");
 
         if input > 0 && input < 9 {
             return input;
         } else {
             println!("error: number outside valid range");
-            println!("{}", input_prompt);
             continue;
         };
     };
@@ -332,7 +332,7 @@ fn wave_gen(waveform_pre: Vec<f64>, pulse_shape: Vec<f64>, sample_rate_hz: f64, 
         waveform_new = vec![filler; (sample_rate_hz * duration_sec) as usize];
     } else {
         let period_sec: f64 = 1.0/pulse_frequency_hz;
-        let pulse_count_final = (pulse_frequency_hz * duration_sec).ceil() as u32;
+        let pulse_count_final = (pulse_frequency_hz * duration_sec).ceil() as usize;
         let wave_len_final: f64 = (sample_rate_hz * duration_sec).round();
     
         for pulse_count in 0..pulse_count_final {
