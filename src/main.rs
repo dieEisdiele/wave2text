@@ -18,12 +18,11 @@ See LICENSE.txt for details.\n");
         Err(error) => {
             println!("error loading ini.json: {}", error);
             println!("Loading default settings...");
-            let default = Settings {
+            Settings {
                 pulse_path: String::from("pulse.txt"),
                 sample_rate_hz: 100000.0,
-                presets_phase_duration_filler: Vec::new()
-            };
-            default
+                presets_pulsefreq_duration_filler: Vec::new()
+            }
         }
     };
 
@@ -38,22 +37,29 @@ See LICENSE.txt for details.\n");
             Vec::from([-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
         }
     };
+
     let mut sample_rate_hz: f64 = settings.sample_rate_hz;
     println!("Loaded sampling rate: {} Hz", sample_rate_hz);
-    let mut presets: Vec<(f64, f64, f64)> = settings.presets_phase_duration_filler;
-    let presets_loaded_n: usize = presets.len();
-    if presets_loaded_n == 0 {
+
+    let mut presets: Vec<WaveDescription> = settings.presets_pulsefreq_duration_filler
+        .iter().map(|x| WaveDescription {
+            pulse_frequency_hz: x.0,
+            duration_sec: x.1,
+            filler: x.2,
+        }).collect();
+    if presets.is_empty() {
         println!("No presets loaded.");
     } else {
-        println!("Loaded {} presets:", presets_loaded_n);
+        println!("Loaded {} presets:", presets.len());
         for (n, preset) in presets.iter().enumerate() {
             println!("
     {}
     Pulse frequency: {} Hz
     Duration:        {} s
-    Filler:          {}", n, preset.0, preset.1, preset.2);
+    Filler:          {}", n, preset.pulse_frequency_hz, preset.duration_sec, preset.filler);
         };
     };
+
     println!(r#"
 
     _          _   ___       _____   _____
@@ -61,6 +67,7 @@ See LICENSE.txt for details.\n");
  -'   \  /\  /  |_|   |   |       | |      `-
        \/  \/         |___|       |_|
  "#);
+
 
     // Define vectors to store waveform in
     let mut waveform: Vec<f64> = Vec::new();
@@ -80,18 +87,17 @@ See LICENSE.txt for details.\n");
 
 
             2 => {
-                let presets_temp: Vec<(f64, f64, f64)> = presets.to_vec();
-                if presets_temp.len() == 0 {
+                if presets.is_empty() {
                     println!("No presets found. Returning to menu...");
                     continue;
                 }
 
-                for (n, preset) in presets_temp.iter().enumerate() {
+                for (n, preset) in presets.iter().enumerate() {
                     println!("
     {}
     Pulse frequency: {} Hz
     Duration:        {} s
-    Filler:          {}", n, preset.0, preset.1, preset.2);
+    Filler:          {}", n, preset.pulse_frequency_hz, preset.duration_sec, preset.filler);
                 };
                 
                 let input_prompt: &str = "Please enter the preset(s) you would like to add.\nYou can specify more than one by inserting a space between each number.";
@@ -105,7 +111,7 @@ See LICENSE.txt for details.\n");
                             continue;
                         }
                     };
-                    match input.trim().split(" ").map(|x| x.parse::<usize>()).collect() {
+                    match input.trim().split(' ').map(|x| x.parse::<usize>()).collect() {
                         Ok(vec) => break vec,
                         Err(error) => {
                             println!("error: {}", error);
@@ -116,16 +122,16 @@ See LICENSE.txt for details.\n");
 
                 for preset_index in preset_selection {
                     let pulse_temp: Vec<f64> = pulse.to_vec();
-                    let preset_add: (f64, f64, f64) = presets_temp[preset_index];
+                    let preset_add: &WaveDescription = &presets[preset_index];
                     let preset_name: String = format!("Preset {}", preset_index);
-                    (waveform, wave_history) = wave_gen(waveform, pulse_temp, sample_rate_hz, preset_add.0, preset_add.1, preset_add.2, wave_history, &preset_name);
+                    (waveform, wave_history) = wave_gen(waveform, wave_history, &preset_name, pulse_temp, sample_rate_hz, preset_add);
                 };
             },
 
 
             3 => {
                 let wave_history_temp: Vec<String> = wave_history.to_vec();
-                if wave_history_temp.len() == 0 {
+                if wave_history_temp.is_empty() {
                     println!("Waveform is empty. Returning to menu...");
                     continue;
                 }
@@ -135,10 +141,7 @@ See LICENSE.txt for details.\n");
                 };
                 println!("\nPress any key to return to menu.");
                 let mut input = String::new();
-                match io::stdin().read_line(&mut input) {
-                    Ok(_) => (),
-                    Err(_) => ()
-                };
+                if io::stdin().read_line(&mut input).is_ok() {};
             },
 
 
@@ -228,8 +231,8 @@ fn get_pulse_shape(file_path: &str) -> Result<Vec<f64>, Box<dyn Error>> {
     let pulse_string = fs::read_to_string(file_path)?;
     let pulse_string: Vec<&str> = pulse_string.split("\r\n").collect();
     let mut pulse_shape: Vec<f64> = Vec::new();
-    for sample in 0..pulse_string.len() {
-        pulse_shape.push(pulse_string[sample].parse::<f64>()?);
+    for sample in pulse_string {
+        pulse_shape.push(sample.parse::<f64>()?);
     }
     Ok(pulse_shape)
 }
@@ -268,11 +271,7 @@ fn confirm(query: &str) -> bool {
         };
     input = input.trim().to_lowercase();
 
-    if input == "y" || input == "yes" {
-        return true;
-    } else {
-        return false;
-    };
+    input == "y" || input == "yes"
 }
 
 /// Brings up the menu and returns the input if valid.
@@ -302,7 +301,7 @@ fn terminal_menu(sample_rate_hz: f64) -> u8 {
 /// User menu for manually editing the waveform.
 fn edit_waveform(waveform_pre: Vec<f64>, pulse_shape: Vec<f64>, sample_rate_hz: f64, wave_history_pre: Vec<String>) -> (Vec<f64>, Vec<String>) {
     let input_prompt: &str = "Please enter a positive number.";
-    let (pulse_frequency_hz, duration_sec, filler): (f64, f64, f64) = loop {
+    let manual_wave: WaveDescription = loop {
         println!("\nPulse phase (Hz)");
         let pulse_frequency_hz_temp: f64 = get_user_num(input_prompt);
         println!("Duration (s)");
@@ -314,45 +313,49 @@ fn edit_waveform(waveform_pre: Vec<f64>, pulse_shape: Vec<f64>, sample_rate_hz: 
         println!("Duration: {} s", duration_sec_temp);
         println!("Filler: {}", filler_temp);
         if confirm("Are these parameters correct? Enter [Y] to confirm, or press any other key to re-enter them.") {
-            break (pulse_frequency_hz_temp, duration_sec_temp, filler_temp);
+            break WaveDescription {
+                pulse_frequency_hz: pulse_frequency_hz_temp,
+                duration_sec: duration_sec_temp,
+                filler: filler_temp,
+            };
         } else {
             continue;
         };
     };
 
-    return wave_gen(waveform_pre, pulse_shape, sample_rate_hz, pulse_frequency_hz, duration_sec, filler, wave_history_pre, "Manual");
+    wave_gen(waveform_pre, wave_history_pre, "Manual", pulse_shape, sample_rate_hz, &manual_wave)
 }
 
 /// Constructs a new waveform in which the provided pulse repeats as specified, and appends it to the end of the existing waveform.
-fn wave_gen(waveform_pre: Vec<f64>, pulse_shape: Vec<f64>, sample_rate_hz: f64, pulse_frequency_hz: f64, duration_sec: f64, filler: f64, wave_history_pre: Vec<String>, history_name: &str) -> (Vec<f64>, Vec<String>) {
-    let mut waveform: Vec<f64> = Vec::from(waveform_pre);
+fn wave_gen(waveform_pre: Vec<f64>, wave_history_pre: Vec<String>, history_name: &str, pulse_shape: Vec<f64>, sample_rate_hz: f64, wave_desc: &WaveDescription) -> (Vec<f64>, Vec<String>) {
+    let mut waveform: Vec<f64> = waveform_pre;
     let mut waveform_new: Vec<f64> = Vec::new();
 
-    if pulse_frequency_hz == 0.0 {
-        waveform_new = vec![filler; (sample_rate_hz * duration_sec) as usize];
+    if wave_desc.pulse_frequency_hz == 0.0 {
+        waveform_new = vec![wave_desc.filler; (sample_rate_hz * wave_desc.duration_sec) as usize];
     } else {
-        let period_sec: f64 = 1.0/pulse_frequency_hz;
-        let pulse_count_final = (pulse_frequency_hz * duration_sec).ceil() as usize;
-        let wave_len_final: f64 = (sample_rate_hz * duration_sec).round();
+        let period_sec: f64 = 1.0/wave_desc.pulse_frequency_hz;
+        let pulse_count_final = (wave_desc.pulse_frequency_hz * wave_desc.duration_sec).ceil() as usize;
+        let wave_len_final: f64 = (sample_rate_hz * wave_desc.duration_sec).round();
     
         for pulse_count in 0..pulse_count_final {
             waveform_new.extend(&pulse_shape);
     
             let wave_len_target = f64::min(wave_len_final, (period_sec * sample_rate_hz * (pulse_count as f64 + 1.0)).round()) as usize;
-            let fill: Vec<f64> = vec![filler; wave_len_target - waveform_new.len()];
+            let fill: Vec<f64> = vec![wave_desc.filler; wave_len_target - waveform_new.len()];
             waveform_new.extend(fill)
         };
     };
 
     waveform.extend(waveform_new);
 
-    let mut wave_history: Vec<String> = Vec::from(wave_history_pre);
+    let mut wave_history: Vec<String> = wave_history_pre;
     let wave_history_new: String = format!("{}
     Sampling rate:   {} Hz
     Pulse frequency: {} Hz
     Duration:        {} s
     Filler:          {}
-", history_name, sample_rate_hz, pulse_frequency_hz, duration_sec, filler);
+", history_name, sample_rate_hz, wave_desc.pulse_frequency_hz, wave_desc.duration_sec, wave_desc.filler);
     wave_history.push(wave_history_new);
 
     (waveform, wave_history)
@@ -364,5 +367,11 @@ fn wave_gen(waveform_pre: Vec<f64>, pulse_shape: Vec<f64>, sample_rate_hz: f64, 
 struct Settings {
     pulse_path: String,
     sample_rate_hz: f64,
-    presets_phase_duration_filler: Vec<(f64, f64, f64)>,
+    presets_pulsefreq_duration_filler: Vec<(f64, f64, f64)>,
+}
+
+struct WaveDescription {
+    pulse_frequency_hz: f64,
+    duration_sec: f64,
+    filler: f64,
 }
