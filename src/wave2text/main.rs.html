@@ -375,6 +375,9 @@
 <a href="#375" id="375">375</a>
 <a href="#376" id="376">376</a>
 <a href="#377" id="377">377</a>
+<a href="#378" id="378">378</a>
+<a href="#379" id="379">379</a>
+<a href="#380" id="380">380</a>
 </pre><pre class="rust"><code><span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>std::error::Error;
 <span class="kw">use </span>std::any;
@@ -391,9 +394,12 @@ See LICENSE.txt for details.\n&quot;</span>);
 
     <span class="comment">// Load settings from JSON file and get the pulse shape
     </span><span class="kw">let </span>settings: Settings = <span class="kw">match </span>get_settings(<span class="string">&quot;settings.json&quot;</span>) {
-        <span class="prelude-val">Ok</span>(json) =&gt; json,
+        <span class="prelude-val">Ok</span>(json) =&gt; {
+            <span class="macro">println!</span>(<span class="string">&quot;Loaded settings.json&quot;</span>);
+            json
+        },
         <span class="prelude-val">Err</span>(error) =&gt; {
-            <span class="macro">println!</span>(<span class="string">&quot;error loading ini.json: {}&quot;</span>, error);
+            <span class="macro">println!</span>(<span class="string">&quot;error loading settings.json: {}&quot;</span>, error);
             <span class="macro">println!</span>(<span class="string">&quot;Loading default settings...&quot;</span>);
             Settings {
                 pulse_path: String::from(<span class="string">&quot;pulse.txt&quot;</span>),
@@ -405,7 +411,7 @@ See LICENSE.txt for details.\n&quot;</span>);
 
     <span class="kw">let </span>pulse: Vec&lt;f64&gt; = <span class="kw">match </span>get_pulse_shape(<span class="kw-2">&amp;</span>settings.pulse_path) {
         <span class="prelude-val">Ok</span>(vec) =&gt; {
-            <span class="macro">println!</span>(<span class="string">&quot;Loaded pulse from {}&quot;</span>, settings.pulse_path);
+            <span class="macro">println!</span>(<span class="string">&quot;Loaded pulse shape from {}&quot;</span>, settings.pulse_path);
             vec
         },
         <span class="prelude-val">Err</span>(error) =&gt; {
