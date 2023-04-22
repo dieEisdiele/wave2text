@@ -14,9 +14,12 @@ See LICENSE.txt for details.\n");
 
     // Load settings from JSON file and get the pulse shape
     let settings: Settings = match get_settings("settings.json") {
-        Ok(json) => json,
+        Ok(json) => {
+            println!("Loaded settings.json");
+            json
+        },
         Err(error) => {
-            println!("error loading ini.json: {}", error);
+            println!("error loading settings.json: {}", error);
             println!("Loading default settings...");
             Settings {
                 pulse_path: String::from("pulse.txt"),
@@ -28,7 +31,7 @@ See LICENSE.txt for details.\n");
 
     let pulse: Vec<f64> = match get_pulse_shape(&settings.pulse_path) {
         Ok(vec) => {
-            println!("Loaded pulse from {}", settings.pulse_path);
+            println!("Loaded pulse shape from {}", settings.pulse_path);
             vec
         },
         Err(error) => {
