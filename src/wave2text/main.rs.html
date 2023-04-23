@@ -369,6 +369,22 @@
 <a href="#369" id="369">369</a>
 <a href="#370" id="370">370</a>
 <a href="#371" id="371">371</a>
+<a href="#372" id="372">372</a>
+<a href="#373" id="373">373</a>
+<a href="#374" id="374">374</a>
+<a href="#375" id="375">375</a>
+<a href="#376" id="376">376</a>
+<a href="#377" id="377">377</a>
+<a href="#378" id="378">378</a>
+<a href="#379" id="379">379</a>
+<a href="#380" id="380">380</a>
+<a href="#381" id="381">381</a>
+<a href="#382" id="382">382</a>
+<a href="#383" id="383">383</a>
+<a href="#384" id="384">384</a>
+<a href="#385" id="385">385</a>
+<a href="#386" id="386">386</a>
+<a href="#387" id="387">387</a>
 </pre><pre class="rust"><code><span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>std::error::Error;
 <span class="kw">use </span>std::any;
@@ -384,13 +400,14 @@ conditions.
 See LICENSE.txt for details.\n&quot;</span>);
 
     <span class="comment">// Load settings from JSON file and get the pulse shape
-    </span><span class="kw">let </span><span class="kw-2">mut </span>settings: Settings = <span class="kw">match </span>get_settings(<span class="string">&quot;settings.json&quot;</span>) {
+    </span><span class="kw">let </span>settings_filepath: <span class="kw-2">&amp;</span>str = <span class="string">&quot;settings.json&quot;</span>;
+    <span class="kw">let </span><span class="kw-2">mut </span>settings: Settings = <span class="kw">match </span>get_settings(settings_filepath) {
         <span class="prelude-val">Ok</span>(json) =&gt; {
-            <span class="macro">println!</span>(<span class="string">&quot;Loaded settings.json&quot;</span>);
+            <span class="macro">println!</span>(<span class="string">&quot;Settings loaded from {}&quot;</span>, settings_filepath);
             json
         },
         <span class="prelude-val">Err</span>(error) =&gt; {
-            <span class="macro">println!</span>(<span class="string">&quot;error loading settings.json: {}&quot;</span>, error);
+            <span class="macro">println!</span>(<span class="string">&quot;error loading settings from {}: {}&quot;</span>, settings_filepath, error);
             <span class="macro">println!</span>(<span class="string">&quot;Loading default settings...&quot;</span>);
             Settings {
                 pulse_path: String::from(<span class="string">&quot;pulse.txt&quot;</span>),
@@ -402,17 +419,17 @@ See LICENSE.txt for details.\n&quot;</span>);
 
     <span class="kw">let </span>pulse: Vec&lt;f64&gt; = <span class="kw">match </span>get_pulse_shape(<span class="kw-2">&amp;</span>settings.pulse_path) {
         <span class="prelude-val">Ok</span>(vec) =&gt; {
-            <span class="macro">println!</span>(<span class="string">&quot;Loaded pulse shape from {}&quot;</span>, settings.pulse_path);
+            <span class="macro">println!</span>(<span class="string">&quot;Pulse shape loaded from {}&quot;</span>, settings.pulse_path);
             vec
         },
         <span class="prelude-val">Err</span>(error) =&gt; {
             <span class="macro">println!</span>(<span class="string">&quot;error loading pulse shape from {}: {}&quot;</span>, settings.pulse_path, error);
-            <span class="macro">println!</span>(<span class="string">&quot;Loading default pulse shape...&quot;</span>);
+            <span class="macro">println!</span>(<span class="string">&quot;Default pulse shape loaded&quot;</span>);
             Vec::from([-<span class="number">1.0</span>, -<span class="number">1.0</span>, -<span class="number">1.0</span>, -<span class="number">1.0</span>, -<span class="number">1.0</span>, -<span class="number">1.0</span>, -<span class="number">1.0</span>, -<span class="number">1.0</span>, -<span class="number">1.0</span>, -<span class="number">1.0</span>, -<span class="number">1.0</span>, -<span class="number">1.0</span>, -<span class="number">1.0</span>, -<span class="number">1.0</span>, -<span class="number">1.0</span>, -<span class="number">1.0</span>, -<span class="number">1.0</span>, -<span class="number">1.0</span>, -<span class="number">1.0</span>, -<span class="number">1.0</span>, <span class="number">1.0</span>, <span class="number">1.0</span>, <span class="number">1.0</span>, <span class="number">1.0</span>, <span class="number">1.0</span>, <span class="number">1.0</span>, <span class="number">1.0</span>, <span class="number">1.0</span>, <span class="number">1.0</span>, <span class="number">1.0</span>, <span class="number">1.0</span>, <span class="number">1.0</span>, <span class="number">1.0</span>, <span class="number">1.0</span>, <span class="number">1.0</span>, <span class="number">1.0</span>, <span class="number">1.0</span>, <span class="number">1.0</span>, <span class="number">1.0</span>, <span class="number">1.0</span>])
         }
     };
 
-    <span class="macro">println!</span>(<span class="string">&quot;Loaded sampling rate: {} Hz&quot;</span>, settings.sample_rate_hz);
+    <span class="macro">println!</span>(<span class="string">&quot;Sampling rate loaded: {} Hz&quot;</span>, settings.sample_rate_hz);
 
     <span class="kw">let </span><span class="kw-2">mut </span>presets: Vec&lt;WaveDescription&gt; = settings.presets_pulsefreq_duration_filler
         .iter().map(|x| WaveDescription {
@@ -421,9 +438,9 @@ See LICENSE.txt for details.\n&quot;</span>);
             filler: x.<span class="number">2</span>,
         }).collect();
     <span class="kw">if </span>presets.is_empty() {
-        <span class="macro">println!</span>(<span class="string">&quot;No presets loaded.&quot;</span>);
+        <span class="macro">println!</span>(<span class="string">&quot;No presets loaded&quot;</span>);
     } <span class="kw">else </span>{
-        <span class="macro">println!</span>(<span class="string">&quot;Loaded {} presets:&quot;</span>, presets.len());
+        <span class="macro">println!</span>(<span class="string">&quot;{} presets loaded:&quot;</span>, presets.len());
         <span class="kw">for </span>(n, preset) <span class="kw">in </span>presets.iter().enumerate() {
             <span class="macro">println!</span>(<span class="string">&quot;
     {}
@@ -451,8 +468,6 @@ See LICENSE.txt for details.\n&quot;</span>);
     </span><span class="kw">loop </span>{
         <span class="kw">match </span>terminal_menu(<span class="kw-2">&amp;</span>settings.sample_rate_hz) {
             <span class="comment">// TODO 1 Add checks that inputs are valid (i.e. floats that must be positive are positive)
-            // TODO 2 Allow user to use presets
-            // TODO 3 Allow user to save presets
             </span><span class="number">1 </span>=&gt; {
                 edit_waveform_manually(<span class="kw-2">&amp;mut </span>waveform, <span class="kw-2">&amp;mut </span>wave_history, <span class="kw-2">&amp;</span>pulse, <span class="kw-2">&amp;</span>settings.sample_rate_hz);
             },
@@ -519,7 +534,7 @@ See LICENSE.txt for details.\n&quot;</span>);
                 <span class="kw">if </span>confirm(<span class="string">&quot;Are you sure you want to clear the current waveform? Enter [Y] to confirm, or any other key to return to menu without clearing.&quot;</span>) {
                     waveform.clear();
                     wave_history.clear();
-                    <span class="macro">println!</span>(<span class="string">&quot;Waveform cleared.&quot;</span>);
+                    <span class="macro">println!</span>(<span class="string">&quot;Waveform cleared&quot;</span>);
                 };
             },
 
@@ -537,21 +552,22 @@ See LICENSE.txt for details.\n&quot;</span>);
                         }
                     };
                 };
+                <span class="kw">let </span>save_name: <span class="kw-2">&amp;</span>str = save_name.trim();
 
                 <span class="kw">let </span>waveform_string: String = waveform.iter().map(|x| x.to_string()).collect::&lt;Vec&lt;String&gt;&gt;().join(<span class="string">&quot;\n&quot;</span>);
-                <span class="kw">let </span>wave_history_string: String = wave_history.join(<span class="string">&quot;\n&quot;</span>);
                 <span class="kw">let </span>waveform_string: <span class="kw-2">&amp;</span>str = waveform_string.trim();
-                <span class="kw">let </span>wave_history_string: <span class="kw-2">&amp;</span>str = wave_history_string.trim();
-                <span class="kw">let </span>save_name: <span class="kw-2">&amp;</span>str = save_name.trim();
                 <span class="kw">match </span>fs::write(<span class="macro">format!</span>(<span class="string">&quot;saved/{}.txt&quot;</span>, save_name), waveform_string) {
-                    <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; <span class="macro">println!</span>(<span class="string">&quot;Waveform saved.&quot;</span>),
+                    <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; <span class="macro">println!</span>(<span class="string">&quot;Waveform saved&quot;</span>),
                     <span class="prelude-val">Err</span>(error) =&gt; {
                         <span class="macro">println!</span>(<span class="string">&quot;error: {}&quot;</span>, error);
-                        <span class="macro">println!</span>(<span class="string">&quot;Waveform was not saved.&quot;</span>);
+                        <span class="macro">println!</span>(<span class="string">&quot;Waveform was not saved&quot;</span>);
                     }
                 };
+                
+                <span class="kw">let </span>wave_history_string: String = wave_history.join(<span class="string">&quot;\n&quot;</span>);
+                <span class="kw">let </span>wave_history_string: <span class="kw-2">&amp;</span>str = wave_history_string.trim();
                 <span class="kw">match </span>fs::write(<span class="macro">format!</span>(<span class="string">&quot;saved/{}_history.txt&quot;</span>, save_name), wave_history_string) {
-                    <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; <span class="macro">println!</span>(<span class="string">&quot;Waveform history saved.&quot;</span>),
+                    <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; <span class="macro">println!</span>(<span class="string">&quot;Waveform history saved&quot;</span>),
                     <span class="prelude-val">Err</span>(error) =&gt; {
                         <span class="macro">println!</span>(<span class="string">&quot;error: {}&quot;</span>, error);
                         <span class="macro">println!</span>(<span class="string">&quot;Waveform history was not saved&quot;</span>);
@@ -561,19 +577,28 @@ See LICENSE.txt for details.\n&quot;</span>);
                 <span class="kw">if </span>confirm(<span class="string">&quot;Do you want to clear the current waveform? Enter [Y] to confirm, or any other key to return to menu without clearing.&quot;</span>) {
                     waveform.clear();
                     wave_history.clear();
-                    <span class="macro">println!</span>(<span class="string">&quot;Waveform cleared.&quot;</span>);
+                    <span class="macro">println!</span>(<span class="string">&quot;Waveform cleared&quot;</span>);
                 };
             },
 
 
-            <span class="comment">// TODO 5 Allow user to edit presets.
+            <span class="comment">// TODO 2 Allow user to edit presets
+            // TODO 3 Allow user to save presets
             </span><span class="number">6 </span>=&gt; <span class="macro">println!</span>(<span class="string">&quot;Edit presets (WiP).&quot;</span>),
 
 
-            <span class="comment">// TODO 4 Query user to save new sampling rate
-            </span><span class="number">7 </span>=&gt; {
+            <span class="number">7 </span>=&gt; {
                 <span class="macro">println!</span>(<span class="string">&quot;Please enter new sampling rate.&quot;</span>);
                 settings.sample_rate_hz = get_user_num(<span class="string">&quot;Please enter a positive number.&quot;</span>);
+                <span class="kw">if </span>confirm(<span class="string">&quot;Do you want to save this sampling rate as the future default? Enter [Y] to confirm, or any other key to return to menu without saving as future default.&quot;</span>) {
+                    <span class="kw">match </span>save_settings(settings_filepath, <span class="kw-2">&amp;</span>settings) {
+                        <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; <span class="macro">println!</span>(<span class="string">&quot;{} updated&quot;</span>, settings_filepath),
+                        <span class="prelude-val">Err</span>(error) =&gt; {
+                            <span class="macro">println!</span>(<span class="string">&quot;error: {}&quot;</span>, error);
+                            <span class="macro">println!</span>(<span class="string">&quot;{} was not updated&quot;</span>, settings_filepath);
+                        }
+                    };
+                };
             },
 
 
@@ -591,9 +616,16 @@ See LICENSE.txt for details.\n&quot;</span>);
 
 <span class="doccomment">/// Loads saved settings from JSON file.
 </span><span class="kw">fn </span>get_settings(file_path: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;Settings, Box&lt;<span class="kw">dyn </span>Error&gt;&gt; {
-    <span class="kw">let </span>ini_data: String = fs::read_to_string(file_path)<span class="question-mark">?</span>;
-    <span class="kw">let </span>settings: Settings = serde_json::from_str(<span class="kw-2">&amp;</span>ini_data)<span class="question-mark">?</span>;
+    <span class="kw">let </span>json_data: String = fs::read_to_string(file_path)<span class="question-mark">?</span>;
+    <span class="kw">let </span>settings: Settings = serde_json::from_str(<span class="kw-2">&amp;</span>json_data)<span class="question-mark">?</span>;
     <span class="prelude-val">Ok</span>(settings)
+}
+
+<span class="doccomment">/// Saves current settings from JSON file.
+</span><span class="kw">fn </span>save_settings(file_path: <span class="kw-2">&amp;</span>str, json_data: <span class="kw-2">&amp;</span>Settings) -&gt; <span class="prelude-ty">Result</span>&lt;(), Box&lt;<span class="kw">dyn </span>Error&gt;&gt; {
+    <span class="kw">let </span>buffer = fs::File::create(file_path)<span class="question-mark">?</span>;
+    serde_json::to_writer(buffer, json_data)<span class="question-mark">?</span>;
+    <span class="prelude-val">Ok</span>(())
 }
 
 <span class="doccomment">/// Loads pulse shape from TXT file.
