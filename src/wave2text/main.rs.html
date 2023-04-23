@@ -371,13 +371,6 @@
 <a href="#371" id="371">371</a>
 <a href="#372" id="372">372</a>
 <a href="#373" id="373">373</a>
-<a href="#374" id="374">374</a>
-<a href="#375" id="375">375</a>
-<a href="#376" id="376">376</a>
-<a href="#377" id="377">377</a>
-<a href="#378" id="378">378</a>
-<a href="#379" id="379">379</a>
-<a href="#380" id="380">380</a>
 </pre><pre class="rust"><code><span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>std::error::Error;
 <span class="kw">use </span>std::any;
@@ -459,13 +452,12 @@ See LICENSE.txt for details.\n&quot;</span>);
 
     <span class="comment">// Main program loop
     </span><span class="kw">loop </span>{
-        <span class="kw">match </span>terminal_menu(sample_rate_hz) {
+        <span class="kw">match </span>terminal_menu(<span class="kw-2">&amp;</span>sample_rate_hz) {
             <span class="comment">// TODO 1 Add checks that inputs are valid (i.e. floats that must be positive are positive)
             // TODO 2 Allow user to use presets
             // TODO 3 Allow user to save presets
             </span><span class="number">1 </span>=&gt; {
-                <span class="kw">let </span>pulse_temp: Vec&lt;f64&gt; = pulse.to_vec();
-                (waveform, wave_history) = edit_waveform(waveform, pulse_temp, sample_rate_hz, wave_history);
+                edit_waveform_manually(<span class="kw-2">&amp;mut </span>waveform, <span class="kw-2">&amp;mut </span>wave_history, <span class="kw-2">&amp;</span>pulse, <span class="kw-2">&amp;</span>sample_rate_hz);
             },
 
 
@@ -504,10 +496,9 @@ See LICENSE.txt for details.\n&quot;</span>);
                 };
 
                 <span class="kw">for </span>preset_index <span class="kw">in </span>preset_selection {
-                    <span class="kw">let </span>pulse_temp: Vec&lt;f64&gt; = pulse.to_vec();
                     <span class="kw">let </span>preset_add: <span class="kw-2">&amp;</span>WaveDescription = <span class="kw-2">&amp;</span>presets[preset_index];
                     <span class="kw">let </span>preset_name: String = <span class="macro">format!</span>(<span class="string">&quot;Preset {}&quot;</span>, preset_index);
-                    (waveform, wave_history) = wave_gen(waveform, wave_history, <span class="kw-2">&amp;</span>preset_name, pulse_temp, sample_rate_hz, preset_add);
+                    wave_gen(<span class="kw-2">&amp;mut </span>waveform, <span class="kw-2">&amp;mut </span>wave_history, <span class="kw-2">&amp;</span>preset_name, <span class="kw-2">&amp;</span>pulse, <span class="kw-2">&amp;</span>sample_rate_hz, preset_add);
                 };
             },
 
@@ -658,7 +649,7 @@ See LICENSE.txt for details.\n&quot;</span>);
 </span>}
 
 <span class="doccomment">/// Brings up the menu and returns the input if valid.
-</span><span class="kw">fn </span>terminal_menu(sample_rate_hz: f64) -&gt; u8 {
+</span><span class="kw">fn </span>terminal_menu(sample_rate_hz: <span class="kw-2">&amp;</span>f64) -&gt; u8 {
     <span class="comment">// Print menu and get user input
     </span><span class="macro">println!</span>(<span class="string">&quot;\n\nWhat would you like to do?\n
     [1]. Add to waveform manually.
@@ -682,7 +673,7 @@ See LICENSE.txt for details.\n&quot;</span>);
 }
 
 <span class="doccomment">/// User menu for manually editing the waveform.
-</span><span class="kw">fn </span>edit_waveform(waveform_pre: Vec&lt;f64&gt;, pulse_shape: Vec&lt;f64&gt;, sample_rate_hz: f64, wave_history_pre: Vec&lt;String&gt;) -&gt; (Vec&lt;f64&gt;, Vec&lt;String&gt;) {
+</span><span class="kw">fn </span>edit_waveform_manually(waveform: <span class="kw-2">&amp;mut </span>Vec&lt;f64&gt;, wave_history: <span class="kw-2">&amp;mut </span>Vec&lt;String&gt;, pulse_shape: <span class="kw-2">&amp;</span>Vec&lt;f64&gt;, sample_rate_hz: <span class="kw-2">&amp;</span>f64) {
     <span class="kw">let </span>input_prompt: <span class="kw-2">&amp;</span>str = <span class="string">&quot;Please enter a positive number.&quot;</span>;
     <span class="kw">let </span>manual_wave: WaveDescription = <span class="kw">loop </span>{
         <span class="macro">println!</span>(<span class="string">&quot;\nPulse phase (Hz)&quot;</span>);
@@ -706,12 +697,11 @@ See LICENSE.txt for details.\n&quot;</span>);
         };
     };
 
-    wave_gen(waveform_pre, wave_history_pre, <span class="string">&quot;Manual&quot;</span>, pulse_shape, sample_rate_hz, <span class="kw-2">&amp;</span>manual_wave)
+    wave_gen(waveform, wave_history, <span class="string">&quot;Manual&quot;</span>, pulse_shape, sample_rate_hz, <span class="kw-2">&amp;</span>manual_wave)
 }
 
 <span class="doccomment">/// Constructs a new waveform in which the provided pulse repeats as specified, and appends it to the end of the existing waveform.
-</span><span class="kw">fn </span>wave_gen(waveform_pre: Vec&lt;f64&gt;, wave_history_pre: Vec&lt;String&gt;, history_name: <span class="kw-2">&amp;</span>str, pulse_shape: Vec&lt;f64&gt;, sample_rate_hz: f64, wave_desc: <span class="kw-2">&amp;</span>WaveDescription) -&gt; (Vec&lt;f64&gt;, Vec&lt;String&gt;) {
-    <span class="kw">let </span><span class="kw-2">mut </span>waveform: Vec&lt;f64&gt; = waveform_pre;
+</span><span class="kw">fn </span>wave_gen(waveform: <span class="kw-2">&amp;mut </span>Vec&lt;f64&gt;, wave_history: <span class="kw-2">&amp;mut </span>Vec&lt;String&gt;, history_name: <span class="kw-2">&amp;</span>str, pulse_shape: <span class="kw-2">&amp;</span>Vec&lt;f64&gt;, sample_rate_hz: <span class="kw-2">&amp;</span>f64, wave_desc: <span class="kw-2">&amp;</span>WaveDescription) {
     <span class="kw">let </span><span class="kw-2">mut </span>waveform_new: Vec&lt;f64&gt; = Vec::new();
 
     <span class="kw">if </span>wave_desc.pulse_frequency_hz == <span class="number">0.0 </span>{
@@ -720,10 +710,9 @@ See LICENSE.txt for details.\n&quot;</span>);
         <span class="kw">let </span>period_sec: f64 = <span class="number">1.0</span>/wave_desc.pulse_frequency_hz;
         <span class="kw">let </span>pulse_count_final = (wave_desc.pulse_frequency_hz * wave_desc.duration_sec).ceil() <span class="kw">as </span>usize;
         <span class="kw">let </span>wave_len_final: f64 = (sample_rate_hz * wave_desc.duration_sec).round();
-    
         <span class="kw">for </span>pulse_count <span class="kw">in </span><span class="number">0</span>..pulse_count_final {
-            waveform_new.extend(<span class="kw-2">&amp;</span>pulse_shape);
-    
+            waveform_new.extend(pulse_shape);
+
             <span class="kw">let </span>wave_len_target = f64::min(wave_len_final, (period_sec * sample_rate_hz * (pulse_count <span class="kw">as </span>f64 + <span class="number">1.0</span>)).round()) <span class="kw">as </span>usize;
             <span class="kw">let </span>fill: Vec&lt;f64&gt; = <span class="macro">vec!</span>[wave_desc.filler; wave_len_target - waveform_new.len()];
             waveform_new.extend(fill)
@@ -732,7 +721,6 @@ See LICENSE.txt for details.\n&quot;</span>);
 
     waveform.extend(waveform_new);
 
-    <span class="kw">let </span><span class="kw-2">mut </span>wave_history: Vec&lt;String&gt; = wave_history_pre;
     <span class="kw">let </span>wave_history_new: String = <span class="macro">format!</span>(<span class="string">&quot;{}
     Sampling rate:   {} Hz
     Pulse frequency: {} Hz
@@ -740,8 +728,6 @@ See LICENSE.txt for details.\n&quot;</span>);
     Filler:          {}
 &quot;</span>, history_name, sample_rate_hz, wave_desc.pulse_frequency_hz, wave_desc.duration_sec, wave_desc.filler);
     wave_history.push(wave_history_new);
-
-    (waveform, wave_history)
 }
 
 

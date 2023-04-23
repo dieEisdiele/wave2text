@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["confirm","edit_waveform","get_pulse_shape","get_settings","get_user_num","main","terminal_menu","wave_gen"],"struct":["Settings","WaveDescription"]};
+window.SIDEBAR_ITEMS = {"fn":["confirm","edit_waveform_manually","get_pulse_shape","get_settings","get_user_num","main","terminal_menu","wave_gen"],"struct":["Settings","WaveDescription"]};
