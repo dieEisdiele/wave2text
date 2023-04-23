@@ -369,8 +369,6 @@
 <a href="#369" id="369">369</a>
 <a href="#370" id="370">370</a>
 <a href="#371" id="371">371</a>
-<a href="#372" id="372">372</a>
-<a href="#373" id="373">373</a>
 </pre><pre class="rust"><code><span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>std::error::Error;
 <span class="kw">use </span>std::any;
@@ -386,7 +384,7 @@ conditions.
 See LICENSE.txt for details.\n&quot;</span>);
 
     <span class="comment">// Load settings from JSON file and get the pulse shape
-    </span><span class="kw">let </span>settings: Settings = <span class="kw">match </span>get_settings(<span class="string">&quot;settings.json&quot;</span>) {
+    </span><span class="kw">let </span><span class="kw-2">mut </span>settings: Settings = <span class="kw">match </span>get_settings(<span class="string">&quot;settings.json&quot;</span>) {
         <span class="prelude-val">Ok</span>(json) =&gt; {
             <span class="macro">println!</span>(<span class="string">&quot;Loaded settings.json&quot;</span>);
             json
@@ -414,8 +412,7 @@ See LICENSE.txt for details.\n&quot;</span>);
         }
     };
 
-    <span class="kw">let </span><span class="kw-2">mut </span>sample_rate_hz: f64 = settings.sample_rate_hz;
-    <span class="macro">println!</span>(<span class="string">&quot;Loaded sampling rate: {} Hz&quot;</span>, sample_rate_hz);
+    <span class="macro">println!</span>(<span class="string">&quot;Loaded sampling rate: {} Hz&quot;</span>, settings.sample_rate_hz);
 
     <span class="kw">let </span><span class="kw-2">mut </span>presets: Vec&lt;WaveDescription&gt; = settings.presets_pulsefreq_duration_filler
         .iter().map(|x| WaveDescription {
@@ -452,12 +449,12 @@ See LICENSE.txt for details.\n&quot;</span>);
 
     <span class="comment">// Main program loop
     </span><span class="kw">loop </span>{
-        <span class="kw">match </span>terminal_menu(<span class="kw-2">&amp;</span>sample_rate_hz) {
+        <span class="kw">match </span>terminal_menu(<span class="kw-2">&amp;</span>settings.sample_rate_hz) {
             <span class="comment">// TODO 1 Add checks that inputs are valid (i.e. floats that must be positive are positive)
             // TODO 2 Allow user to use presets
             // TODO 3 Allow user to save presets
             </span><span class="number">1 </span>=&gt; {
-                edit_waveform_manually(<span class="kw-2">&amp;mut </span>waveform, <span class="kw-2">&amp;mut </span>wave_history, <span class="kw-2">&amp;</span>pulse, <span class="kw-2">&amp;</span>sample_rate_hz);
+                edit_waveform_manually(<span class="kw-2">&amp;mut </span>waveform, <span class="kw-2">&amp;mut </span>wave_history, <span class="kw-2">&amp;</span>pulse, <span class="kw-2">&amp;</span>settings.sample_rate_hz);
             },
 
 
@@ -498,7 +495,7 @@ See LICENSE.txt for details.\n&quot;</span>);
                 <span class="kw">for </span>preset_index <span class="kw">in </span>preset_selection {
                     <span class="kw">let </span>preset_add: <span class="kw-2">&amp;</span>WaveDescription = <span class="kw-2">&amp;</span>presets[preset_index];
                     <span class="kw">let </span>preset_name: String = <span class="macro">format!</span>(<span class="string">&quot;Preset {}&quot;</span>, preset_index);
-                    wave_gen(<span class="kw-2">&amp;mut </span>waveform, <span class="kw-2">&amp;mut </span>wave_history, <span class="kw-2">&amp;</span>preset_name, <span class="kw-2">&amp;</span>pulse, <span class="kw-2">&amp;</span>sample_rate_hz, preset_add);
+                    wave_gen(<span class="kw-2">&amp;mut </span>waveform, <span class="kw-2">&amp;mut </span>wave_history, <span class="kw-2">&amp;</span>preset_name, <span class="kw-2">&amp;</span>pulse, <span class="kw-2">&amp;</span>settings.sample_rate_hz, preset_add);
                 };
             },
 
@@ -513,14 +510,13 @@ See LICENSE.txt for details.\n&quot;</span>);
                 <span class="kw">for </span>item <span class="kw">in </span>wave_history_temp {
                     <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, item);
                 };
-                <span class="macro">println!</span>(<span class="string">&quot;\nPress any key to return to menu.&quot;</span>);
-                <span class="kw">let </span><span class="kw-2">mut </span>input = String::new();
-                <span class="kw">if </span>io::stdin().read_line(<span class="kw-2">&amp;mut </span>input).is_ok() {};
+                <span class="macro">println!</span>(<span class="string">&quot;\nPress [Enter] to return to menu.&quot;</span>);
+                <span class="kw">if </span>io::stdin().read_line(<span class="kw-2">&amp;mut </span>String::new()).is_ok() {};
             },
 
 
             <span class="number">4 </span>=&gt; {
-                <span class="kw">if </span>confirm(<span class="string">&quot;Are you sure you want to clear the current waveform? Enter [Y] to confirm, or press any other key to return to menu without clearing.&quot;</span>) {
+                <span class="kw">if </span>confirm(<span class="string">&quot;Are you sure you want to clear the current waveform? Enter [Y] to confirm, or any other key to return to menu without clearing.&quot;</span>) {
                     waveform.clear();
                     wave_history.clear();
                     <span class="macro">println!</span>(<span class="string">&quot;Waveform cleared.&quot;</span>);
@@ -562,7 +558,7 @@ See LICENSE.txt for details.\n&quot;</span>);
                     }
                 };
 
-                <span class="kw">if </span>confirm(<span class="string">&quot;Do you want to clear the current waveform? Enter [Y] to confirm, or press any other key to return to menu without clearing.&quot;</span>) {
+                <span class="kw">if </span>confirm(<span class="string">&quot;Do you want to clear the current waveform? Enter [Y] to confirm, or any other key to return to menu without clearing.&quot;</span>) {
                     waveform.clear();
                     wave_history.clear();
                     <span class="macro">println!</span>(<span class="string">&quot;Waveform cleared.&quot;</span>);
@@ -577,11 +573,11 @@ See LICENSE.txt for details.\n&quot;</span>);
             <span class="comment">// TODO 4 Query user to save new sampling rate
             </span><span class="number">7 </span>=&gt; {
                 <span class="macro">println!</span>(<span class="string">&quot;Please enter new sampling rate.&quot;</span>);
-                sample_rate_hz = get_user_num(<span class="string">&quot;Please enter a positive number.&quot;</span>);
+                settings.sample_rate_hz = get_user_num(<span class="string">&quot;Please enter a positive number.&quot;</span>);
             },
 
 
-            <span class="number">8 </span>=&gt; <span class="kw">if </span>confirm(<span class="string">&quot;Are you sure you want to exit the program? Enter [Y] to confirm, or press any other key to return to menu.&quot;</span>) {
+            <span class="number">8 </span>=&gt; <span class="kw">if </span>confirm(<span class="string">&quot;Are you sure you want to exit the program? Enter [Y] to confirm, or any other key to return to menu.&quot;</span>) {
                 <span class="macro">println!</span>(<span class="string">&quot;Exiting...&quot;</span>);
                 <span class="kw">break</span>;
             },
@@ -686,7 +682,7 @@ See LICENSE.txt for details.\n&quot;</span>);
         <span class="macro">println!</span>(<span class="string">&quot;\nPulse frequency: {} Hz&quot;</span>, pulse_frequency_hz_temp);
         <span class="macro">println!</span>(<span class="string">&quot;Duration: {} s&quot;</span>, duration_sec_temp);
         <span class="macro">println!</span>(<span class="string">&quot;Filler: {}&quot;</span>, filler_temp);
-        <span class="kw">if </span>confirm(<span class="string">&quot;Are these parameters correct? Enter [Y] to confirm, or press any other key to re-enter them.&quot;</span>) {
+        <span class="kw">if </span>confirm(<span class="string">&quot;Are these parameters correct? Enter [Y] to confirm, or any other key to re-enter them.&quot;</span>) {
             <span class="kw">break </span>WaveDescription {
                 pulse_frequency_hz: pulse_frequency_hz_temp,
                 duration_sec: duration_sec_temp,
