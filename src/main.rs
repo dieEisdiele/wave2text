@@ -13,7 +13,7 @@ conditions.
 See LICENSE.txt for details.\n");
 
     // Load settings from JSON file and get the pulse shape
-    let settings: Settings = match get_settings("settings.json") {
+    let mut settings: Settings = match get_settings("settings.json") {
         Ok(json) => {
             println!("Loaded settings.json");
             json
@@ -41,8 +41,7 @@ See LICENSE.txt for details.\n");
         }
     };
 
-    let mut sample_rate_hz: f64 = settings.sample_rate_hz;
-    println!("Loaded sampling rate: {} Hz", sample_rate_hz);
+    println!("Loaded sampling rate: {} Hz", settings.sample_rate_hz);
 
     let mut presets: Vec<WaveDescription> = settings.presets_pulsefreq_duration_filler
         .iter().map(|x| WaveDescription {
@@ -79,12 +78,12 @@ See LICENSE.txt for details.\n");
 
     // Main program loop
     loop {
-        match terminal_menu(&sample_rate_hz) {
+        match terminal_menu(&settings.sample_rate_hz) {
             // TODO 1 Add checks that inputs are valid (i.e. floats that must be positive are positive)
             // TODO 2 Allow user to use presets
             // TODO 3 Allow user to save presets
             1 => {
-                edit_waveform_manually(&mut waveform, &mut wave_history, &pulse, &sample_rate_hz);
+                edit_waveform_manually(&mut waveform, &mut wave_history, &pulse, &settings.sample_rate_hz);
             },
 
 
@@ -125,7 +124,7 @@ See LICENSE.txt for details.\n");
                 for preset_index in preset_selection {
                     let preset_add: &WaveDescription = &presets[preset_index];
                     let preset_name: String = format!("Preset {}", preset_index);
-                    wave_gen(&mut waveform, &mut wave_history, &preset_name, &pulse, &sample_rate_hz, preset_add);
+                    wave_gen(&mut waveform, &mut wave_history, &preset_name, &pulse, &settings.sample_rate_hz, preset_add);
                 };
             },
 
@@ -140,14 +139,13 @@ See LICENSE.txt for details.\n");
                 for item in wave_history_temp {
                     println!("{}", item);
                 };
-                println!("\nPress any key to return to menu.");
-                let mut input = String::new();
-                if io::stdin().read_line(&mut input).is_ok() {};
+                println!("\nPress [Enter] to return to menu.");
+                if io::stdin().read_line(&mut String::new()).is_ok() {};
             },
 
 
             4 => {
-                if confirm("Are you sure you want to clear the current waveform? Enter [Y] to confirm, or press any other key to return to menu without clearing.") {
+                if confirm("Are you sure you want to clear the current waveform? Enter [Y] to confirm, or any other key to return to menu without clearing.") {
                     waveform.clear();
                     wave_history.clear();
                     println!("Waveform cleared.");
@@ -189,7 +187,7 @@ See LICENSE.txt for details.\n");
                     }
                 };
 
-                if confirm("Do you want to clear the current waveform? Enter [Y] to confirm, or press any other key to return to menu without clearing.") {
+                if confirm("Do you want to clear the current waveform? Enter [Y] to confirm, or any other key to return to menu without clearing.") {
                     waveform.clear();
                     wave_history.clear();
                     println!("Waveform cleared.");
@@ -204,11 +202,11 @@ See LICENSE.txt for details.\n");
             // TODO 4 Query user to save new sampling rate
             7 => {
                 println!("Please enter new sampling rate.");
-                sample_rate_hz = get_user_num("Please enter a positive number.");
+                settings.sample_rate_hz = get_user_num("Please enter a positive number.");
             },
 
 
-            8 => if confirm("Are you sure you want to exit the program? Enter [Y] to confirm, or press any other key to return to menu.") {
+            8 => if confirm("Are you sure you want to exit the program? Enter [Y] to confirm, or any other key to return to menu.") {
                 println!("Exiting...");
                 break;
             },
@@ -313,7 +311,7 @@ fn edit_waveform_manually(waveform: &mut Vec<f64>, wave_history: &mut Vec<String
         println!("\nPulse frequency: {} Hz", pulse_frequency_hz_temp);
         println!("Duration: {} s", duration_sec_temp);
         println!("Filler: {}", filler_temp);
-        if confirm("Are these parameters correct? Enter [Y] to confirm, or press any other key to re-enter them.") {
+        if confirm("Are these parameters correct? Enter [Y] to confirm, or any other key to re-enter them.") {
             break WaveDescription {
                 pulse_frequency_hz: pulse_frequency_hz_temp,
                 duration_sec: duration_sec_temp,
