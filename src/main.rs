@@ -13,13 +13,14 @@ conditions.
 See LICENSE.txt for details.\n");
 
     // Load settings from JSON file and get the pulse shape
-    let mut settings: Settings = match get_settings("settings.json") {
+    let settings_filepath: &str = "settings.json";
+    let mut settings: Settings = match get_settings(settings_filepath) {
         Ok(json) => {
-            println!("Loaded settings.json");
+            println!("Settings loaded from {}", settings_filepath);
             json
         },
         Err(error) => {
-            println!("error loading settings.json: {}", error);
+            println!("error loading settings from {}: {}", settings_filepath, error);
             println!("Loading default settings...");
             Settings {
                 pulse_path: String::from("pulse.txt"),
@@ -31,17 +32,17 @@ See LICENSE.txt for details.\n");
 
     let pulse: Vec<f64> = match get_pulse_shape(&settings.pulse_path) {
         Ok(vec) => {
-            println!("Loaded pulse shape from {}", settings.pulse_path);
+            println!("Pulse shape loaded from {}", settings.pulse_path);
             vec
         },
         Err(error) => {
             println!("error loading pulse shape from {}: {}", settings.pulse_path, error);
-            println!("Loading default pulse shape...");
+            println!("Default pulse shape loaded");
             Vec::from([-1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
         }
     };
 
-    println!("Loaded sampling rate: {} Hz", settings.sample_rate_hz);
+    println!("Sampling rate loaded: {} Hz", settings.sample_rate_hz);
 
     let mut presets: Vec<WaveDescription> = settings.presets_pulsefreq_duration_filler
         .iter().map(|x| WaveDescription {
@@ -50,9 +51,9 @@ See LICENSE.txt for details.\n");
             filler: x.2,
         }).collect();
     if presets.is_empty() {
-        println!("No presets loaded.");
+        println!("No presets loaded");
     } else {
-        println!("Loaded {} presets:", presets.len());
+        println!("{} presets loaded:", presets.len());
         for (n, preset) in presets.iter().enumerate() {
             println!("
     {}
@@ -80,8 +81,6 @@ See LICENSE.txt for details.\n");
     loop {
         match terminal_menu(&settings.sample_rate_hz) {
             // TODO 1 Add checks that inputs are valid (i.e. floats that must be positive are positive)
-            // TODO 2 Allow user to use presets
-            // TODO 3 Allow user to save presets
             1 => {
                 edit_waveform_manually(&mut waveform, &mut wave_history, &pulse, &settings.sample_rate_hz);
             },
@@ -148,7 +147,7 @@ See LICENSE.txt for details.\n");
                 if confirm("Are you sure you want to clear the current waveform? Enter [Y] to confirm, or any other key to return to menu without clearing.") {
                     waveform.clear();
                     wave_history.clear();
-                    println!("Waveform cleared.");
+                    println!("Waveform cleared");
                 };
             },
 
@@ -166,21 +165,22 @@ See LICENSE.txt for details.\n");
                         }
                     };
                 };
+                let save_name: &str = save_name.trim();
 
                 let waveform_string: String = waveform.iter().map(|x| x.to_string()).collect::<Vec<String>>().join("\n");
-                let wave_history_string: String = wave_history.join("\n");
                 let waveform_string: &str = waveform_string.trim();
-                let wave_history_string: &str = wave_history_string.trim();
-                let save_name: &str = save_name.trim();
                 match fs::write(format!("saved/{}.txt", save_name), waveform_string) {
-                    Ok(_) => println!("Waveform saved."),
+                    Ok(_) => println!("Waveform saved"),
                     Err(error) => {
                         println!("error: {}", error);
-                        println!("Waveform was not saved.");
+                        println!("Waveform was not saved");
                     }
                 };
+                
+                let wave_history_string: String = wave_history.join("\n");
+                let wave_history_string: &str = wave_history_string.trim();
                 match fs::write(format!("saved/{}_history.txt", save_name), wave_history_string) {
-                    Ok(_) => println!("Waveform history saved."),
+                    Ok(_) => println!("Waveform history saved"),
                     Err(error) => {
                         println!("error: {}", error);
                         println!("Waveform history was not saved");
@@ -190,19 +190,28 @@ See LICENSE.txt for details.\n");
                 if confirm("Do you want to clear the current waveform? Enter [Y] to confirm, or any other key to return to menu without clearing.") {
                     waveform.clear();
                     wave_history.clear();
-                    println!("Waveform cleared.");
+                    println!("Waveform cleared");
                 };
             },
 
 
-            // TODO 5 Allow user to edit presets.
+            // TODO 2 Allow user to edit presets
+            // TODO 3 Allow user to save presets
             6 => println!("Edit presets (WiP)."),
 
 
-            // TODO 4 Query user to save new sampling rate
             7 => {
                 println!("Please enter new sampling rate.");
                 settings.sample_rate_hz = get_user_num("Please enter a positive number.");
+                if confirm("Do you want to save this sampling rate as the future default? Enter [Y] to confirm, or any other key to return to menu without saving as future default.") {
+                    match save_settings(settings_filepath, &settings) {
+                        Ok(_) => println!("{} updated", settings_filepath),
+                        Err(error) => {
+                            println!("error: {}", error);
+                            println!("{} was not updated", settings_filepath);
+                        }
+                    };
+                };
             },
 
 
@@ -220,9 +229,16 @@ See LICENSE.txt for details.\n");
 
 /// Loads saved settings from JSON file.
 fn get_settings(file_path: &str) -> Result<Settings, Box<dyn Error>> {
-    let ini_data: String = fs::read_to_string(file_path)?;
-    let settings: Settings = serde_json::from_str(&ini_data)?;
+    let json_data: String = fs::read_to_string(file_path)?;
+    let settings: Settings = serde_json::from_str(&json_data)?;
     Ok(settings)
+}
+
+/// Saves current settings from JSON file.
+fn save_settings(file_path: &str, json_data: &Settings) -> Result<(), Box<dyn Error>> {
+    let buffer = fs::File::create(file_path)?;
+    serde_json::to_writer(buffer, json_data)?;
+    Ok(())
 }
 
 /// Loads pulse shape from TXT file.
