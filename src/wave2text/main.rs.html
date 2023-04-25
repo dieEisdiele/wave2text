@@ -385,6 +385,19 @@
 <a href="#385" id="385">385</a>
 <a href="#386" id="386">386</a>
 <a href="#387" id="387">387</a>
+<a href="#388" id="388">388</a>
+<a href="#389" id="389">389</a>
+<a href="#390" id="390">390</a>
+<a href="#391" id="391">391</a>
+<a href="#392" id="392">392</a>
+<a href="#393" id="393">393</a>
+<a href="#394" id="394">394</a>
+<a href="#395" id="395">395</a>
+<a href="#396" id="396">396</a>
+<a href="#397" id="397">397</a>
+<a href="#398" id="398">398</a>
+<a href="#399" id="399">399</a>
+<a href="#400" id="400">400</a>
 </pre><pre class="rust"><code><span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>std::error::Error;
 <span class="kw">use </span>std::any;
@@ -409,11 +422,21 @@ See LICENSE.txt for details.\n&quot;</span>);
         <span class="prelude-val">Err</span>(error) =&gt; {
             <span class="macro">println!</span>(<span class="string">&quot;error loading settings from {}: {}&quot;</span>, settings_filepath, error);
             <span class="macro">println!</span>(<span class="string">&quot;Loading default settings...&quot;</span>);
-            Settings {
+            <span class="kw">let </span>default_settings = Settings {
                 pulse_path: String::from(<span class="string">&quot;pulse.txt&quot;</span>),
                 sample_rate_hz: <span class="number">100000.0</span>,
                 presets_pulsefreq_duration_filler: Vec::new()
-            }
+            };
+            <span class="kw">if </span>confirm(<span class="string">&quot;Do you want to create a settings file from default settings? Enter [Y] to confirm, or any other key to continue.&quot;</span>) {
+                <span class="kw">match </span>save_settings(settings_filepath, <span class="kw-2">&amp;</span>default_settings) {
+                    <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; <span class="macro">println!</span>(<span class="string">&quot;{} created&quot;</span>, settings_filepath),
+                    <span class="prelude-val">Err</span>(error) =&gt; {
+                        <span class="macro">println!</span>(<span class="string">&quot;error: {}&quot;</span>, error);
+                        <span class="macro">println!</span>(<span class="string">&quot;{} was not created&quot;</span>, settings_filepath);
+                    }
+                };
+            };
+            default_settings
         }
     };
 
@@ -429,7 +452,8 @@ See LICENSE.txt for details.\n&quot;</span>);
         }
     };
 
-    <span class="macro">println!</span>(<span class="string">&quot;Sampling rate loaded: {} Hz&quot;</span>, settings.sample_rate_hz);
+    <span class="kw">let </span><span class="kw-2">mut </span>sample_rate_hz: f64 = settings.sample_rate_hz;
+    <span class="macro">println!</span>(<span class="string">&quot;Sampling rate loaded: {} Hz&quot;</span>, sample_rate_hz);
 
     <span class="kw">let </span><span class="kw-2">mut </span>presets: Vec&lt;WaveDescription&gt; = settings.presets_pulsefreq_duration_filler
         .iter().map(|x| WaveDescription {
@@ -466,10 +490,10 @@ See LICENSE.txt for details.\n&quot;</span>);
 
     <span class="comment">// Main program loop
     </span><span class="kw">loop </span>{
-        <span class="kw">match </span>terminal_menu(<span class="kw-2">&amp;</span>settings.sample_rate_hz) {
+        <span class="kw">match </span>terminal_menu(<span class="kw-2">&amp;</span>sample_rate_hz) {
             <span class="comment">// TODO 1 Add checks that inputs are valid (i.e. floats that must be positive are positive)
             </span><span class="number">1 </span>=&gt; {
-                edit_waveform_manually(<span class="kw-2">&amp;mut </span>waveform, <span class="kw-2">&amp;mut </span>wave_history, <span class="kw-2">&amp;</span>pulse, <span class="kw-2">&amp;</span>settings.sample_rate_hz);
+                edit_waveform_manually(<span class="kw-2">&amp;mut </span>waveform, <span class="kw-2">&amp;mut </span>wave_history, <span class="kw-2">&amp;</span>pulse, <span class="kw-2">&amp;</span>sample_rate_hz);
             },
 
 
@@ -510,7 +534,7 @@ See LICENSE.txt for details.\n&quot;</span>);
                 <span class="kw">for </span>preset_index <span class="kw">in </span>preset_selection {
                     <span class="kw">let </span>preset_add: <span class="kw-2">&amp;</span>WaveDescription = <span class="kw-2">&amp;</span>presets[preset_index];
                     <span class="kw">let </span>preset_name: String = <span class="macro">format!</span>(<span class="string">&quot;Preset {}&quot;</span>, preset_index);
-                    wave_gen(<span class="kw-2">&amp;mut </span>waveform, <span class="kw-2">&amp;mut </span>wave_history, <span class="kw-2">&amp;</span>preset_name, <span class="kw-2">&amp;</span>pulse, <span class="kw-2">&amp;</span>settings.sample_rate_hz, preset_add);
+                    wave_gen(<span class="kw-2">&amp;mut </span>waveform, <span class="kw-2">&amp;mut </span>wave_history, <span class="kw-2">&amp;</span>preset_name, <span class="kw-2">&amp;</span>pulse, <span class="kw-2">&amp;</span>sample_rate_hz, preset_add);
                 };
             },
 
@@ -589,8 +613,9 @@ See LICENSE.txt for details.\n&quot;</span>);
 
             <span class="number">7 </span>=&gt; {
                 <span class="macro">println!</span>(<span class="string">&quot;Please enter new sampling rate.&quot;</span>);
-                settings.sample_rate_hz = get_user_num(<span class="string">&quot;Please enter a positive number.&quot;</span>);
+                sample_rate_hz = get_user_num(<span class="string">&quot;Please enter a positive number.&quot;</span>);
                 <span class="kw">if </span>confirm(<span class="string">&quot;Do you want to save this sampling rate as the future default? Enter [Y] to confirm, or any other key to return to menu without saving as future default.&quot;</span>) {
+                    settings.sample_rate_hz = sample_rate_hz;
                     <span class="kw">match </span>save_settings(settings_filepath, <span class="kw-2">&amp;</span>settings) {
                         <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; <span class="macro">println!</span>(<span class="string">&quot;{} updated&quot;</span>, settings_filepath),
                         <span class="prelude-val">Err</span>(error) =&gt; {
@@ -767,7 +792,8 @@ See LICENSE.txt for details.\n&quot;</span>);
     presets_pulsefreq_duration_filler: Vec&lt;(f64, f64, f64)&gt;,
 }
 
-<span class="kw">struct </span>WaveDescription {
+<span class="doccomment">/// Parameters for wave generation.
+</span><span class="kw">struct </span>WaveDescription {
     pulse_frequency_hz: f64,
     duration_sec: f64,
     filler: f64,
