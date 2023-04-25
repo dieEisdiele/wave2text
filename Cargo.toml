@@ -1,6 +1,6 @@
 [package]
 name = "wave2text"
-version = "0.1.0"
+version = "0.3.0"
 edition = "2021"
 description = "A simple Rust program for generating pulse waveforms as text files."
 keywords = ["waveform", "pulse", "frequency"]

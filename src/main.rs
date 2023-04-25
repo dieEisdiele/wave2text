@@ -22,11 +22,21 @@ See LICENSE.txt for details.\n");
         Err(error) => {
             println!("error loading settings from {}: {}", settings_filepath, error);
             println!("Loading default settings...");
-            Settings {
+            let default_settings = Settings {
                 pulse_path: String::from("pulse.txt"),
                 sample_rate_hz: 100000.0,
                 presets_pulsefreq_duration_filler: Vec::new()
-            }
+            };
+            if confirm("Do you want to create a settings file from default settings? Enter [Y] to confirm, or any other key to continue.") {
+                match save_settings(settings_filepath, &default_settings) {
+                    Ok(_) => println!("{} created", settings_filepath),
+                    Err(error) => {
+                        println!("error: {}", error);
+                        println!("{} was not created", settings_filepath);
+                    }
+                };
+            };
+            default_settings
         }
     };
 
@@ -42,7 +52,8 @@ See LICENSE.txt for details.\n");
         }
     };
 
-    println!("Sampling rate loaded: {} Hz", settings.sample_rate_hz);
+    let mut sample_rate_hz: f64 = settings.sample_rate_hz;
+    println!("Sampling rate loaded: {} Hz", sample_rate_hz);
 
     let mut presets: Vec<WaveDescription> = settings.presets_pulsefreq_duration_filler
         .iter().map(|x| WaveDescription {
@@ -79,10 +90,10 @@ See LICENSE.txt for details.\n");
 
     // Main program loop
     loop {
-        match terminal_menu(&settings.sample_rate_hz) {
+        match terminal_menu(&sample_rate_hz) {
             // TODO 1 Add checks that inputs are valid (i.e. floats that must be positive are positive)
             1 => {
-                edit_waveform_manually(&mut waveform, &mut wave_history, &pulse, &settings.sample_rate_hz);
+                edit_waveform_manually(&mut waveform, &mut wave_history, &pulse, &sample_rate_hz);
             },
 
 
@@ -123,7 +134,7 @@ See LICENSE.txt for details.\n");
                 for preset_index in preset_selection {
                     let preset_add: &WaveDescription = &presets[preset_index];
                     let preset_name: String = format!("Preset {}", preset_index);
-                    wave_gen(&mut waveform, &mut wave_history, &preset_name, &pulse, &settings.sample_rate_hz, preset_add);
+                    wave_gen(&mut waveform, &mut wave_history, &preset_name, &pulse, &sample_rate_hz, preset_add);
                 };
             },
 
@@ -202,8 +213,9 @@ See LICENSE.txt for details.\n");
 
             7 => {
                 println!("Please enter new sampling rate.");
-                settings.sample_rate_hz = get_user_num("Please enter a positive number.");
+                sample_rate_hz = get_user_num("Please enter a positive number.");
                 if confirm("Do you want to save this sampling rate as the future default? Enter [Y] to confirm, or any other key to return to menu without saving as future default.") {
+                    settings.sample_rate_hz = sample_rate_hz;
                     match save_settings(settings_filepath, &settings) {
                         Ok(_) => println!("{} updated", settings_filepath),
                         Err(error) => {
@@ -380,6 +392,7 @@ struct Settings {
     presets_pulsefreq_duration_filler: Vec<(f64, f64, f64)>,
 }
 
+/// Parameters for wave generation.
 struct WaveDescription {
     pulse_frequency_hz: f64,
     duration_sec: f64,
