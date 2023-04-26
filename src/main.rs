@@ -198,7 +198,6 @@ See LICENSE.txt for details.\n");
 
 
             // TODO 2 Allow user to edit presets
-            // TODO 3 Allow user to save presets
             6 => {
                 loop {
                     match menu("
