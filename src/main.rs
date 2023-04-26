@@ -28,13 +28,7 @@ See LICENSE.txt for details.\n");
                 presets_pulsefreq_duration_filler: Vec::new()
             };
             if confirm("Do you want to create a settings file from default settings? Enter [Y] to confirm, or any other key to continue.") {
-                match save_settings(settings_filepath, &default_settings) {
-                    Ok(_) => println!("{} created", settings_filepath),
-                    Err(error) => {
-                        println!("error: {}", error);
-                        println!("{} was not created", settings_filepath);
-                    }
-                };
+                save_settings(settings_filepath, &default_settings);
             };
             default_settings
         }
@@ -90,7 +84,16 @@ See LICENSE.txt for details.\n");
 
     // Main program loop
     loop {
-        match terminal_menu(&sample_rate_hz) {
+        let main_menu: String = format!("
+    [1] Add to waveform manually.
+    [2] Add presets to waveform.
+    [3] View waveform history.
+    [4] Clear waveform.
+    [5] Export waveform.
+    [6] View/edit presets.
+    [7] Edit sampling rate ({} Hz).
+    [8] Exit program.", sample_rate_hz);
+        match menu(&main_menu, 8) {
             // TODO 1 Add checks that inputs are valid (i.e. floats that must be positive are positive)
             1 => {
                 edit_waveform_manually(&mut waveform, &mut wave_history, &pulse, &sample_rate_hz);
@@ -98,23 +101,11 @@ See LICENSE.txt for details.\n");
 
 
             2 => {
-                if presets.is_empty() {
-                    println!("No presets found. Returning to menu...");
-                    continue;
-                }
-
-                for (n, preset) in presets.iter().enumerate() {
-                    println!("
-    {}
-    Pulse frequency: {} Hz
-    Duration:        {} s
-    Filler:          {}", n, preset.pulse_frequency_hz, preset.duration_sec, preset.filler);
-                };
+                display_presets(&presets);
                 
-                let input_prompt: &str = "Please enter the preset(s) you would like to add.\nYou can specify more than one by inserting a space between each number.";
                 let preset_selection: Vec<usize> = loop {
                     let mut input = String::new();
-                    println!("{}", input_prompt);
+                    println!("Please enter the preset(s) you would like to add.\nYou can specify more than one by inserting a space between each number.");
                     match io::stdin().read_line(&mut input) {
                         Ok(_) => (),
                         Err(error) => {
@@ -208,26 +199,55 @@ See LICENSE.txt for details.\n");
 
             // TODO 2 Allow user to edit presets
             // TODO 3 Allow user to save presets
-            6 => println!("Edit presets (WiP)."),
+            6 => {
+                loop {
+                    match menu("
+    [1] Create new preset.
+    [2] Edit existing preset.
+    [3] Remove existing preset.
+    [4] Save presets as future default.
+    [5] Return to menu.", 5) {
+                      1 => println!("Create new preset (WiP)"),
 
 
-            7 => {
-                println!("Please enter new sampling rate.");
-                sample_rate_hz = get_user_num("Please enter a positive number.");
-                if confirm("Do you want to save this sampling rate as the future default? Enter [Y] to confirm, or any other key to return to menu without saving as future default.") {
-                    settings.sample_rate_hz = sample_rate_hz;
-                    match save_settings(settings_filepath, &settings) {
-                        Ok(_) => println!("{} updated", settings_filepath),
-                        Err(error) => {
-                            println!("error: {}", error);
-                            println!("{} was not updated", settings_filepath);
-                        }
+                      2 => println!("Edit existing preset (WiP)"),
+
+
+                      3 => println!("Remove existing preset (WiP)"),
+
+                      4 => {
+                        display_presets(&presets);
+                        if confirm("Are you sure you want to save these presets as the future default? This will overwrite the existing settings file. Enter [Y] to confirm, or any other key to go back without saving.") {
+                            settings.presets_pulsefreq_duration_filler = presets.iter().map(|x| (x.pulse_frequency_hz, x.duration_sec, x.filler)).collect();
+                            save_settings(settings_filepath, &settings);
+                        };
+                      },
+
+
+                      5 => break,
+                      _ => (),
                     };
                 };
             },
 
 
+            7 => {
+                println!("Please enter new sampling rate.");
+                sample_rate_hz = get_user_num("Please enter a positive number.");
+                if confirm("Do you want to save this sampling rate as the future default? This will overwrite the existing settings file. Enter [Y] to confirm, or any other key to return to menu without saving.") {
+                    settings.sample_rate_hz = sample_rate_hz;
+                    save_settings(settings_filepath, &settings);
+                };
+            },
+
+
             8 => if confirm("Are you sure you want to exit the program? Enter [Y] to confirm, or any other key to return to menu.") {
+                let presets_check: Vec<(f64, f64, f64)> = presets.iter().map(|x| (x.pulse_frequency_hz, x.duration_sec, x.filler)).collect();
+                if (settings.sample_rate_hz != sample_rate_hz || settings.presets_pulsefreq_duration_filler != presets_check) && confirm("Do you want to save current settings as the future default? This will overwrite the existing settings file. Enter [Y] to confirm, or any other key to exit without saving.") {
+                    settings.sample_rate_hz = sample_rate_hz;
+                    settings.presets_pulsefreq_duration_filler = presets_check;
+                    save_settings(settings_filepath, &settings);
+                };
                 println!("Exiting...");
                 break;
             },
@@ -247,10 +267,22 @@ fn get_settings(file_path: &str) -> Result<Settings, Box<dyn Error>> {
 }
 
 /// Saves current settings from JSON file.
-fn save_settings(file_path: &str, json_data: &Settings) -> Result<(), Box<dyn Error>> {
-    let buffer = fs::File::create(file_path)?;
-    serde_json::to_writer(buffer, json_data)?;
-    Ok(())
+fn save_settings(file_path: &str, json_data: &Settings) {
+    match fs::File::create(file_path) {
+        Ok(buffer) => {
+            match serde_json::to_writer(buffer, json_data) {
+                Ok(_) => println!("{} updated", file_path),
+                Err(error) => {
+                    println!("error: {}", error);
+                    println!("{} was not updated", file_path);
+                }
+            };
+        },
+        Err(error) => {
+            println!("error: {}", error);
+            println!("{} was not updated", file_path);
+        }
+    };
 }
 
 /// Loads pulse shape from TXT file.
@@ -302,21 +334,13 @@ fn confirm(query: &str) -> bool {
 }
 
 /// Brings up the menu and returns the input if valid.
-fn terminal_menu(sample_rate_hz: &f64) -> u8 {
+fn menu(menu_text: &str, max_input: u8) -> u8 {
     // Print menu and get user input
-    println!("\n\nWhat would you like to do?\n
-    [1]. Add to waveform manually.
-    [2]. Add presets to waveform.
-    [3]. View waveform history.
-    [4]. Clear waveform.
-    [5]. Export waveform.
-    [6]. View/edit presets.
-    [7]. Edit sampling rate ({} Hz).
-    [8]. Exit program.\n\n", sample_rate_hz);
+    println!("\n\nWhat would you like to do?\n{}\n\n", menu_text);
     loop {
         let input: u8 = get_user_num("Please enter a number 1-8.");
 
-        if input > 0 && input < 9 {
+        if input > 0 && input <= max_input {
             return input;
         } else {
             println!("error: number outside valid range");
@@ -325,16 +349,32 @@ fn terminal_menu(sample_rate_hz: &f64) -> u8 {
     };
 }
 
+/// Displays list of current presets.
+fn display_presets(presets: &Vec<WaveDescription>) {
+    if presets.is_empty() {
+        println!("No presets found. Returning to menu...");
+        return;
+    }
+
+    for (n, preset) in presets.iter().enumerate() {
+        println!("
+    {}
+    Pulse frequency: {} Hz
+    Duration:        {} s
+    Filler:          {}", n, preset.pulse_frequency_hz, preset.duration_sec, preset.filler);
+    };
+}
+
 /// User menu for manually editing the waveform.
 fn edit_waveform_manually(waveform: &mut Vec<f64>, wave_history: &mut Vec<String>, pulse_shape: &Vec<f64>, sample_rate_hz: &f64) {
-    let input_prompt: &str = "Please enter a positive number.";
+    let prompt: &str = "Please enter a positive number.";
     let manual_wave: WaveDescription = loop {
         println!("\nPulse phase (Hz)");
-        let pulse_frequency_hz_temp: f64 = get_user_num(input_prompt);
+        let pulse_frequency_hz_temp: f64 = get_user_num(prompt);
         println!("Duration (s)");
-        let duration_sec_temp: f64 = get_user_num(input_prompt);
+        let duration_sec_temp: f64 = get_user_num(prompt);
         println!("Filler value");
-        let filler_temp: f64 = get_user_num(input_prompt);
+        let filler_temp: f64 = get_user_num(prompt);
 
         println!("\nPulse frequency: {} Hz", pulse_frequency_hz_temp);
         println!("Duration: {} s", duration_sec_temp);
