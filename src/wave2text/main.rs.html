@@ -467,6 +467,19 @@
 <a href="#467" id="467">467</a>
 <a href="#468" id="468">468</a>
 <a href="#469" id="469">469</a>
+<a href="#470" id="470">470</a>
+<a href="#471" id="471">471</a>
+<a href="#472" id="472">472</a>
+<a href="#473" id="473">473</a>
+<a href="#474" id="474">474</a>
+<a href="#475" id="475">475</a>
+<a href="#476" id="476">476</a>
+<a href="#477" id="477">477</a>
+<a href="#478" id="478">478</a>
+<a href="#479" id="479">479</a>
+<a href="#480" id="480">480</a>
+<a href="#481" id="481">481</a>
+<a href="#482" id="482">482</a>
 </pre><pre class="rust"><code><span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>std::error::Error;
 <span class="kw">use </span>std::any;
@@ -582,29 +595,42 @@ See LICENSE.txt for details.\n&quot;</span>);
             <span class="number">2 </span>=&gt; {
                 display_presets(<span class="kw-2">&amp;</span>presets);
                 
-                <span class="kw">let </span>preset_selection: Vec&lt;usize&gt; = <span class="kw">loop </span>{
-                    <span class="kw">let </span><span class="kw-2">mut </span>input = String::new();
-                    <span class="macro">println!</span>(<span class="string">&quot;Please enter the preset(s) you would like to add.\nYou can specify more than one by inserting a space between each number.&quot;</span>);
-                    <span class="kw">match </span>io::stdin().read_line(<span class="kw-2">&amp;mut </span>input) {
-                        <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; (),
-                        <span class="prelude-val">Err</span>(error) =&gt; {
-                            <span class="macro">println!</span>(<span class="string">&quot;error: {}&quot;</span>, error);
-                            <span class="kw">continue</span>;
-                        }
-                    };
-                    <span class="kw">match </span>input.trim().split(<span class="string">&#39; &#39;</span>).map(|x| x.parse::&lt;usize&gt;()).collect() {
-                        <span class="prelude-val">Ok</span>(vec) =&gt; <span class="kw">break </span>vec,
-                        <span class="prelude-val">Err</span>(error) =&gt; {
-                            <span class="macro">println!</span>(<span class="string">&quot;error: {}&quot;</span>, error);
-                            <span class="kw">continue</span>;
-                        }
-                    };
-                };
+                <span class="kw">if </span>!<span class="kw-2">&amp;</span>presets.is_empty() {
+                    <span class="kw">let </span>preset_selection: Vec&lt;usize&gt; = <span class="kw">loop </span>{
+                        <span class="kw">let </span><span class="kw-2">mut </span>input = String::new();
+                        <span class="macro">println!</span>(<span class="string">&quot;Please enter the preset(s) you would like to add.\nYou can specify more than one by inserting a space between each number.&quot;</span>);
+                        <span class="kw">match </span>io::stdin().read_line(<span class="kw-2">&amp;mut </span>input) {
+                            <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; (),
+                            <span class="prelude-val">Err</span>(error) =&gt; {
+                                <span class="macro">println!</span>(<span class="string">&quot;error: {}&quot;</span>, error);
+                                <span class="kw">continue</span>;
+                            }
+                        };
 
-                <span class="kw">for </span>preset_index <span class="kw">in </span>preset_selection {
-                    <span class="kw">let </span>preset_add: <span class="kw-2">&amp;</span>WaveDescription = <span class="kw-2">&amp;</span>presets[preset_index];
-                    <span class="kw">let </span>preset_name: String = <span class="macro">format!</span>(<span class="string">&quot;Preset {}&quot;</span>, preset_index);
-                    wave_gen(<span class="kw-2">&amp;mut </span>waveform, <span class="kw-2">&amp;mut </span>wave_history, <span class="kw-2">&amp;</span>preset_name, <span class="kw-2">&amp;</span>pulse, <span class="kw-2">&amp;</span>sample_rate_hz, preset_add);
+                        <span class="kw">let </span>preset_selection_temp: Vec&lt;usize&gt; = <span class="kw">match </span>input.trim().split(<span class="string">&#39; &#39;</span>).map(|x| x.parse::&lt;usize&gt;()).collect() {
+                            <span class="prelude-val">Ok</span>(vec) =&gt; vec,
+                            <span class="prelude-val">Err</span>(error) =&gt; {
+                                <span class="macro">println!</span>(<span class="string">&quot;error: {}&quot;</span>, error);
+                                <span class="kw">continue</span>;
+                            }
+                        };
+
+                        <span class="kw">let </span>preset_len: <span class="kw-2">&amp;</span>usize = <span class="kw-2">&amp;</span>presets.len();
+                        <span class="kw">for </span>preset_index <span class="kw">in </span><span class="kw-2">&amp;</span>preset_selection_temp {
+                            <span class="kw">if </span>preset_index &gt;= preset_len {
+                                <span class="macro">println!</span>(<span class="string">&quot;error: index out of bounds: the len is {} but the index is {}&quot;</span>, preset_index, preset_len);
+                                <span class="kw">continue
+                            </span>};
+                        }
+
+                        <span class="kw">break </span>preset_selection_temp
+                    };
+
+                    <span class="kw">for </span>preset_index <span class="kw">in </span>preset_selection {
+                        <span class="kw">let </span>preset_add: <span class="kw-2">&amp;</span>WaveDescription = <span class="kw-2">&amp;</span>presets[preset_index];
+                        <span class="kw">let </span>preset_name: String = <span class="macro">format!</span>(<span class="string">&quot;Preset {}&quot;</span>, preset_index);
+                        wave_gen(<span class="kw-2">&amp;mut </span>waveform, <span class="kw-2">&amp;mut </span>wave_history, <span class="kw-2">&amp;</span>preset_name, <span class="kw-2">&amp;</span>pulse, <span class="kw-2">&amp;</span>sample_rate_hz, preset_add);
+                    };
                 };
             },
 
