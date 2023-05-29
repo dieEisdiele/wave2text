@@ -1,6 +1,7 @@
 {
     "pulse_path": "pulse.txt",
     "sample_rate_hz": 100000.0,
+    "prepend_zero": false,
     "presets_pulsefreq_duration_filler": [
         [20, 5, 0],
         [0, 10, 1]

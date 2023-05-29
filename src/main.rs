@@ -25,6 +25,7 @@ See LICENSE.txt for details.\n");
             let default_settings = Settings {
                 pulse_path: String::from("pulse.txt"),
                 sample_rate_hz: 100000.0,
+                prepend_zero: false,
                 presets_pulsefreq_duration_filler: Vec::new()
             };
             if confirm("Do you want to create a settings file from default settings? Enter [Y] to confirm, or any other key to continue.") {
@@ -48,6 +49,9 @@ See LICENSE.txt for details.\n");
 
     let mut sample_rate_hz: f64 = settings.sample_rate_hz;
     println!("Sampling rate loaded: {} Hz", sample_rate_hz);
+
+    let mut prepend_zero: bool = settings.prepend_zero;
+    println!("Prepend zero: {}", prepend_zero);
 
     let mut presets: Vec<WaveDescription> = settings.presets_pulsefreq_duration_filler
         .iter().map(|x| WaveDescription {
@@ -81,6 +85,11 @@ See LICENSE.txt for details.\n");
     let mut waveform: Vec<f64> = Vec::new();
     let mut wave_history: Vec<String> = Vec::new();
 
+    if prepend_zero {
+        waveform.push(0.0);
+        wave_history.push(String::from("0\n"));
+    }
+
 
     // Main program loop
     loop {
@@ -92,8 +101,9 @@ See LICENSE.txt for details.\n");
     [5] Export waveform.
     [6] View/edit presets.
     [7] Edit sampling rate ({} Hz).
-    [8] Exit program.", sample_rate_hz);
-        match menu(&main_menu, 8) {
+    [8] Change prepend zero (currently {})
+    [9] Exit program.", sample_rate_hz, prepend_zero);
+        match menu(&main_menu, 9) {
             // TODO 1 Add checks that inputs are valid (i.e. floats that must be positive are positive)
             1 => {
                 edit_waveform_manually(&mut waveform, &mut wave_history, &pulse, &sample_rate_hz);
@@ -149,6 +159,12 @@ See LICENSE.txt for details.\n");
                 if confirm("Are you sure you want to clear the current waveform? Enter [Y] to confirm, or any other key to return to menu without clearing.") {
                     waveform.clear();
                     wave_history.clear();
+
+                    if prepend_zero {
+                        waveform.push(0.0);
+                        wave_history.push(String::from("0\n"));
+                    }
+
                     println!("Waveform cleared");
                 };
             },
@@ -240,7 +256,20 @@ See LICENSE.txt for details.\n");
             },
 
 
-            8 => if confirm("Are you sure you want to exit the program? Enter [Y] to confirm, or any other key to return to menu.") {
+            8 => {
+                let prepend_zero_check = !prepend_zero;
+                let message: String = format!("Are you sure you want to set prepend zero to {}? Enter [Y] to confirm, or any other key to return to menu.", prepend_zero_check);
+                if confirm(&message) {
+                    prepend_zero = prepend_zero_check;
+                    if confirm("Do you want to save this as the future default? This will overwrite the existing settings file. Enter [Y] to confirm, or any other key to return to menu without saving.") {
+                        settings.prepend_zero = prepend_zero;
+                        save_settings(settings_filepath, &settings);
+                    };
+                }
+            }
+
+
+            9 => if confirm("Are you sure you want to exit the program? Enter [Y] to confirm, or any other key to return to menu.") {
                 let presets_check: Vec<(f64, f64, f64)> = presets.iter().map(|x| (x.pulse_frequency_hz, x.duration_sec, x.filler)).collect();
                 if (settings.sample_rate_hz != sample_rate_hz || settings.presets_pulsefreq_duration_filler != presets_check) && confirm("Do you want to save current settings as the future default? This will overwrite the existing settings file. Enter [Y] to confirm, or any other key to exit without saving.") {
                     settings.sample_rate_hz = sample_rate_hz;
@@ -428,6 +457,7 @@ fn wave_gen(waveform: &mut Vec<f64>, wave_history: &mut Vec<String>, history_nam
 struct Settings {
     pulse_path: String,
     sample_rate_hz: f64,
+    prepend_zero: bool,
     presets_pulsefreq_duration_filler: Vec<(f64, f64, f64)>,
 }
 
