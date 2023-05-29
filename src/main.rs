@@ -113,29 +113,42 @@ See LICENSE.txt for details.\n");
             2 => {
                 display_presets(&presets);
                 
-                let preset_selection: Vec<usize> = loop {
-                    let mut input = String::new();
-                    println!("Please enter the preset(s) you would like to add.\nYou can specify more than one by inserting a space between each number.");
-                    match io::stdin().read_line(&mut input) {
-                        Ok(_) => (),
-                        Err(error) => {
-                            println!("error: {}", error);
-                            continue;
-                        }
-                    };
-                    match input.trim().split(' ').map(|x| x.parse::<usize>()).collect() {
-                        Ok(vec) => break vec,
-                        Err(error) => {
-                            println!("error: {}", error);
-                            continue;
-                        }
-                    };
-                };
+                if !&presets.is_empty() {
+                    let preset_selection: Vec<usize> = loop {
+                        let mut input = String::new();
+                        println!("Please enter the preset(s) you would like to add.\nYou can specify more than one by inserting a space between each number.");
+                        match io::stdin().read_line(&mut input) {
+                            Ok(_) => (),
+                            Err(error) => {
+                                println!("error: {}", error);
+                                continue;
+                            }
+                        };
 
-                for preset_index in preset_selection {
-                    let preset_add: &WaveDescription = &presets[preset_index];
-                    let preset_name: String = format!("Preset {}", preset_index);
-                    wave_gen(&mut waveform, &mut wave_history, &preset_name, &pulse, &sample_rate_hz, preset_add);
+                        let preset_selection_temp: Vec<usize> = match input.trim().split(' ').map(|x| x.parse::<usize>()).collect() {
+                            Ok(vec) => vec,
+                            Err(error) => {
+                                println!("error: {}", error);
+                                continue;
+                            }
+                        };
+
+                        let preset_len: &usize = &presets.len();
+                        for preset_index in &preset_selection_temp {
+                            if preset_index >= preset_len {
+                                println!("error: index out of bounds: the len is {} but the index is {}", preset_index, preset_len);
+                                continue
+                            };
+                        }
+
+                        break preset_selection_temp
+                    };
+
+                    for preset_index in preset_selection {
+                        let preset_add: &WaveDescription = &presets[preset_index];
+                        let preset_name: String = format!("Preset {}", preset_index);
+                        wave_gen(&mut waveform, &mut wave_history, &preset_name, &pulse, &sample_rate_hz, preset_add);
+                    };
                 };
             },
 
